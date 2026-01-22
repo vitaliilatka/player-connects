@@ -4,10 +4,10 @@ Full-stack web application for managing football player statistics inside league
 Includes public view, authentication, admin panel, image uploads via Cloudinary, and MongoDB storage.
 
 🔗 **Live demo (frontend):**  
-https://playersstats.netlify.app/
+https://playerconnects.netlify.app/
 
 🔗 **Backend API:**  
-https://player-stats-backend.onrender.com
+https://player-connects-backend.onrender.com/
 
 ---
 
