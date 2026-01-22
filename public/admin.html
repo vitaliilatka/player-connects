@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin · Players</title>
+
+  <!-- Bootstrap + FontAwesome -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/favicon.png" />
+
+  <style>
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e8f0fe 0%, #f6f9ff 100%);
+      font-size: 0.875rem;
+    }
+    .card {
+      border: 0;
+      border-radius: 14px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+      background: #ffffffcc;
+      backdrop-filter: blur(2px);
+    }
+    .table th, .table td {
+      padding: 0.35rem 0.4rem;
+      vertical-align: middle;
+      text-align: center;
+    }
+    td input, td select {
+      font-size: 0.8rem;
+      padding: 0.15rem 0.25rem;
+    }
+
+    /* Column widths */
+    td:nth-child(1) input { min-width: 160px; }
+    td:nth-child(2) input { min-width: 140px; }
+    td:nth-child(3) select { min-width: 90px; }
+
+    td:nth-child(n+4):nth-child(-n+13) input {
+      max-width: 55px;
+    }
+
+    .table thead th {
+      white-space: nowrap;
+      font-size: 0.75rem;
+    }
+
+    td:nth-child(n+4):nth-child(-n+16) input { max-width: 50px; }
+    td input[name="bonus"] { max-width: 40px; }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: 4px;
+      height: 100%;
+    }
+    .actions .btn {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border-radius: 6px;
+      height: 42px;
+    }
+
+    /* League banner */
+    .league-banner {
+      font-weight: 700;
+      font-size: 1.5rem;
+      text-align: center;
+      color: #fff;
+      padding: 15px 25px;
+      border-radius: 14px;
+      margin: 20px auto;
+      width: fit-content;
+      min-width: 60%;
+      background: linear-gradient(135deg, #007bff 0%, #00c6ff 100%);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+      letter-spacing: 0.5px;
+
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .league-banner.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .thumb { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; }
+    .td-thumb { width: 42px; }
+  </style>
+</head>
+
+<body class="py-3">
+  <div class="container-fluid">
+
+    <!-- Top panel -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0">⚙️ Admin · Players</h3>
+
+      <div class="d-flex align-items-center gap-3">
+        <span class="fw-semibold" id="welcomeAdmin"></span>
+        <button id="logoutBtn" class="btn btn-sm btn-outline-secondary">
+          <i class="fa-solid fa-right-from-bracket"></i> Log out
+        </button>
+      </div>
+    </div>
+
+    <div id="adminAlert" class="position-fixed bottom-0 end-0 p-3" style="z-index:1100; pointer-events:none;"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <button id="createLeagueBtn" class="btn btn-sm btn-primary">
+          <i class="fa-solid fa-plus"></i> Create League
+        </button>
+
+        <div id="leagueBanner" class="league-banner" style="display:none;">
+          <!-- league name will be injected here -->
+        </div>
+
+        <select id="leagueSelect" class="form-select form-select-sm" style="width:auto; min-width:200px;">
+          <option value="">Choose league...</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Add player form -->
+    <div class="card mb-3">
+      <div class="card-body p-2">
+        <form id="addPlayerForm" class="row g-2 align-items-end">
+
+          <div id="adminAlert" class="mt-2"></div>
+
+          <div class="col-md-2">
+            <label class="form-label mb-1">Name</label>
+            <input type="text" name="name" class="form-control form-control-sm" required>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label mb-1">Team</label>
+            <input type="text" name="team" class="form-control form-control-sm">
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label mb-1">Position</label>
+            <select name="position" class="form-select form-select-sm">
+              <option value="">—</option>
+              <option value="GK">GK</option>
+              <option value="DEF">DEF</option>
+              <option value="MID">MID</option>
+              <option value="FW">FW</option>
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label mb-1">Image</label>
+            <input type="file" name="image" accept="image/*" class="form-control form-control-sm">
+          </div>
+
+          <div class="col-md-1">
+            <button id="addPlayerBtn" type="submit">Add Player</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Players table -->
+    <div class="card">
+      <div class="card-body p-2">
+        <div class="table-responsive">
+          <table class="table table-sm table-striped align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="td-thumb"></th>
+                <th>Name</th>
+                <th>Team</th>
+                <th>Position</th>
+
+                <th><i class="fa-solid fa-gamepad"></i></th>
+                <th><i class="fa-solid fa-futbol text-success"></i></th>
+                <th><i class="fa-solid fa-arrow-right-long text-primary"></i></th>
+                <th><i class="fa-solid fa-shield-halved text-secondary"></i></th>
+                <th><i class="fa-solid fa-hand text-warning"></i></th>
+                <th><i class="fa-solid fa-broom text-info"></i></th>
+                <th><i class="fa-solid fa-futbol" style="color:#dc3545"></i></th>
+
+                <th>P↑</th>
+                <th>P×</th>
+                <th>P🖐</th>
+
+                <th><span style="display:inline-block;width:12px;height:18px;background:yellow;border:1px solid #333;"></span></th>
+                <th><span style="display:inline-block;width:12px;height:18px;background:red;border:1px solid #333;"></span></th>
+
+                <th><i class="fa-solid fa-star text-warning"></i></th>
+
+                <th>Rating</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody id="playersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Admin script -->
+  <script type="module" src="admin.js"></script>
+
+  <script>
+    // === Role check ===
+    const role = localStorage.getItem("role");
+    const username = localStorage.getItem("username") || "admin";
+
+    if (role !== "admin") {
+      window.location.href = "/index.html"; // redirect non-admin users
+    }
+
+    document.getElementById("welcomeAdmin").textContent = `Welcome, ${username}!`;
+
+    // === Logout ===
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("role");
+      localStorage.removeItem("username");
+      localStorage.removeItem("token");
+      window.location.href = "/index.html";
+    });
+  </script>
+
+  <div id="toastContainer" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2000;"></div>
+
+  <footer class="text-center py-3 mt-5 small text-muted" style="background: #f8f9fa80; backdrop-filter: blur(3px); border-top: 1px    solid #ddd;">
+    © 2025 Created by <strong>Vitalii Latka</strong>
+  </footer>
+
+</body>
+</html>
