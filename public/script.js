@@ -1,5 +1,8 @@
 // document.addEventListener("DOMContentLoaded", () => loadPlayersPublic());
 
+const API_URL = "https://player-connects-backend.onrender.com";
+
+
 const DEFAULT_IMG = "https://placehold.co/150x200?text=No%20Image";
 
 // === Renamed function ===
