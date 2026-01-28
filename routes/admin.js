@@ -124,33 +124,58 @@ router.get("/players/:leagueId", authMiddleware(), async (req, res) => {
    PUT /admin/players/:id
    Update + Cloudinary image
 ============================ */
-router.put(
-  "/players/:id",
-  authMiddleware(),
-  upload.single("image"), 
-  async (req, res) => {
-    try {
-      const player = await Player.findById(req.params.id);
-      if (!player) {
-        return res.status(404).json({ message: "Player not found" });
-      }
 
-      // 🔥 Update image if uploaded
-      if (req.file) {
-        player.image = req.file.path; // ✅ Cloudinary URL
-      }
+router.put("/players/:id", authMiddleware(), upload.single("image"), async (req, res) => {
+  try {
+    console.log("req.body:", req.body);
+    console.log("req.file:", req.file);
 
-      // Merge the rest of body fields
-      Object.assign(player, req.body);
+    const player = await Player.findById(req.params.id);
+    if (!player) return res.status(404).json({ message: "Player not found" });
 
-      await player.save();
-      res.json(player);
-    } catch (err) {
-      console.error("Player update error:", err);
-      res.status(500).json({ message: "Failed to update player" });
+    if (req.file) {
+      console.log("Updating image to:", req.file.path);
+      player.image = req.file.path;
     }
+
+    Object.assign(player, req.body);
+    await player.save();
+    res.json(player);
+  } catch (err) {
+    console.error("Player update error:", err);
+    res.status(500).json({ message: "Failed to update player", error: err.message });
   }
-);
+});
+
+
+
+// router.put(
+//   "/players/:id",
+//   authMiddleware(),
+//   upload.single("image"), 
+//   async (req, res) => {
+//     try {
+//       const player = await Player.findById(req.params.id);
+//       if (!player) {
+//         return res.status(404).json({ message: "Player not found" });
+//       }
+
+//       // 🔥 Update image if uploaded
+//       if (req.file) {
+//         player.image = req.file.path; // ✅ Cloudinary URL
+//       }
+
+//       // Merge the rest of body fields
+//       Object.assign(player, req.body);
+
+//       await player.save();
+//       res.json(player);
+//     } catch (err) {
+//       console.error("Player update error:", err);
+//       res.status(500).json({ message: "Failed to update player" });
+//     }
+//   }
+// );
 
 /* ============================
    DELETE /admin/players/:id

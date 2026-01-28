@@ -317,6 +317,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const formData = new FormData();
 
     for (const [key, value] of Object.entries(data)) {
+      formData.append("image", fileInput.files[0]);
+      formData.append("name", nameValue);
+      formData.append("team", teamValue);
+      formData.append("position", positionValue);
       formData.append(key, value);
     }
 
