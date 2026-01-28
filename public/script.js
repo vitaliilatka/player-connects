@@ -6,7 +6,7 @@ const API_URL = "https://player-connects-backend.onrender.com";
 const DEFAULT_IMG = "https://placehold.co/150x200?text=No%20Image";
 
 // === Renamed function ===
-async function loadPlayersPublic(leagueId) {
+async function loadPlayers(leagueId) {
   try {
     const url = leagueId
       ? `${API_URL}/players?leagueId=${leagueId}`
