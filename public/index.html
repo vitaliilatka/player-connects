@@ -188,7 +188,7 @@
   </div>
 
   <script>
-    const API_URL = "https://player-stats-backend.onrender.com";
+    const API_URL = "https://player-connects-backend.onrender.com";
   </script>
 
 
@@ -207,7 +207,7 @@
       const password = form.password.value.trim();
 
       try {
-        const API_URL = "https://player-stats-backend.onrender.com";
+        const API_URL = "https://player-connects-backend.onrender.com";
         const res = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
