@@ -9,13 +9,13 @@ import Player from "../models/Player.js";
 
 const router = express.Router();
 
-router.get("/ping", (req, res) => {
-  res.json({
-    ok: true,
-    service: "player-connects-backend",
-    time: new Date().toISOString(),
-  });
-});
+// router.get("/ping", (req, res) => {
+//   res.json({
+//     ok: true,
+//     service: "player-connects-backend",
+//     time: new Date().toISOString(),
+//   });
+// });
 
 
 /* ============================

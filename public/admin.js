@@ -1,6 +1,6 @@
 // admin.js
 
-const API_URL = "https://player-connects-backend.onrender.com/";
+const API_URL = "https://player-connects-backend.onrender.com";
 let currentLeagueId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
