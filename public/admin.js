@@ -313,31 +313,62 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => (alertBox.innerHTML = ""), 3000);
   }
 
+
   async function updatePlayer(id, data, newImageFile = null) {
-    const formData = new FormData();
+  const formData = new FormData();
 
-    for (const [key, value] of Object.entries(data)) {
-      formData.append("image", fileInput.files[0]);
-      formData.append("name", nameValue);
-      formData.append("team", teamValue);
-      formData.append("position", positionValue);
-      formData.append(key, value);
-    }
+  // обычные поля
+  for (const [key, value] of Object.entries(data)) {
+    formData.append(key, value);
+  }
 
-    if (newImageFile) {
-      formData.append("image", newImageFile);
-    }
+  // файл — ТОЛЬКО если выбран
+  if (newImageFile) {
+    formData.append("image", newImageFile);
+  }
 
-    const res = await fetch(`${API_URL}/admin/players/${id}`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
+  const res = await fetch(`${API_URL}/admin/players/${id}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Player update error:", text);
-    }
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("Player update error:", text);
+    throw new Error("Failed to update player");
+  }
+
+  return await res.json();
+}
+
+  // async function updatePlayer(id, data, newImageFile = null) {
+  //   const formData = new FormData();
+
+  //   for (const [key, value] of Object.entries(data)) {
+  //     formData.append("image", fileInput.files[0]);
+  //     formData.append("name", nameValue);
+  //     formData.append("team", teamValue);
+  //     formData.append("position", positionValue);
+  //     formData.append(key, value);
+  //   }
+
+  //   if (newImageFile) {
+  //     formData.append("image", newImageFile);
+  //   }
+
+  //   const res = await fetch(`${API_URL}/admin/players/${id}`, {
+  //     method: "PUT",
+  //     headers: { Authorization: `Bearer ${token}` },
+  //     body: formData,
+  //   });
+
+  //   if (!res.ok) {
+  //     const text = await res.text();
+  //     console.error("Player update error:", text);
+  //   }
 
 
     // if (!res.ok) console.error("Player update error");
