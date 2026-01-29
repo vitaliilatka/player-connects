@@ -138,6 +138,9 @@ router.put("/players/:id", authMiddleware(), upload.single("image"), async (req,
       player.image = req.file.path;
     }
 
+    delete req.body.image;
+
+
     Object.assign(player, req.body);
     await player.save();
     res.json(player);
