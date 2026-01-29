@@ -372,7 +372,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // if (!res.ok) console.error("Player update error");
-  }
+  // }
 
   async function deletePlayer(id) {
     const res = await fetch(`${API_URL}/admin/players/${id}`, {
