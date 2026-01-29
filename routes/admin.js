@@ -116,39 +116,48 @@ router.get("/players/:leagueId", authMiddleware(), async (req, res) => {
    Update + Cloudinary image
 ============================ */
 
-router.put(
-  "/players/:id",
-  authMiddleware(),
-  upload.single("image"),
-  async (req, res) => {
-    try {
+router.put("/players/:id", authMiddleware(), upload.single("image"), async (req, res) => {
+  try {
+    console.log("=== PUT /players/:id START ===");
+    console.log("req.body:", req.body);
+    console.log("req.file:", req.file);
 
-      console.log("BODY:", req.body);
-      console.log("FILE:", req.file);
+    const player = await Player.findById(req.params.id);
+    if (!player) return res.status(404).json({ message: "Player not found" });
 
-      const player = await Player.findById(req.params.id);
-      if (!player) {
-        return res.status(404).json({ message: "Player not found" });
-      }
-
-      const { name, team, position } = req.body;
-
-      if (name !== undefined) player.name = name;
-      if (team !== undefined) player.team = team;
-      if (position !== undefined) player.position = position;
-
-      if (req.file) {
-        player.image = req.file.path; // Cloudinary URL
-      }
-
-      await player.save();
-      res.json(player);
-    } catch (err) {
-      console.error("🔥 Player update error:", err);
-      res.status(500).json({ message: err.message });
+    if (req.file) {
+      console.log("Updating image to:", req.file.path);
+      player.image = req.file.path;
     }
+
+    // Только разрешённые поля
+    const allowedFields = [
+      "name", "team", "position", "games", "goals", "assists", "blocks",
+      "saves", "cleansheets", "goalsconceded",
+      "penalty_earned", "penalty_missed", "penalty_saved",
+      "yellowcards", "redcards", "bonus"
+    ];
+
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        // Преобразуем числа
+        if (["games","goals","assists","blocks","saves","cleansheets","goalsconceded","penalty_earned","penalty_missed","penalty_saved","yellowcards","redcards","bonus"].includes(field)) {
+          player[field] = Number(req.body[field]) || 0;
+        } else {
+          player[field] = req.body[field];
+        }
+      }
+    });
+
+    await player.save();
+    console.log("=== Player updated successfully ===");
+    res.json(player);
+  } catch (err) {
+    console.error("Player update error:", err);
+    res.status(500).json({ message: "Failed to update player", error: err.message });
   }
-);
+});
+
 
 
 // router.put(
