@@ -116,77 +116,35 @@ router.get("/players/:leagueId", authMiddleware(), async (req, res) => {
    Update + Cloudinary image
 ============================ */
 
-router.put("/players/:id", authMiddleware(), upload.single("image"), async (req, res) => {
-  try {
-    console.log("=== PUT /players/:id START ===");
-    console.log("req.body:", req.body);
-    console.log("req.file:", req.file);
 
-    const player = await Player.findById(req.params.id);
-    if (!player) return res.status(404).json({ message: "Player not found" });
 
-    if (req.file) {
-      console.log("Updating image to:", req.file.path);
-      player.image = req.file.path;
-    }
-
-    // Только разрешённые поля
-    const allowedFields = [
-      "name", "team", "position", "games", "goals", "assists", "blocks",
-      "saves", "cleansheets", "goalsconceded",
-      "penalty_earned", "penalty_missed", "penalty_saved",
-      "yellowcards", "redcards", "bonus"
-    ];
-
-    allowedFields.forEach(field => {
-      if (req.body[field] !== undefined) {
-        // Преобразуем числа
-        if (["games","goals","assists","blocks","saves","cleansheets","goalsconceded","penalty_earned","penalty_missed","penalty_saved","yellowcards","redcards","bonus"].includes(field)) {
-          player[field] = Number(req.body[field]) || 0;
-        } else {
-          player[field] = req.body[field];
-        }
+router.put(
+  "/players/:id",
+  authMiddleware(),
+  upload.single("image"), 
+  async (req, res) => {
+    try {
+      const player = await Player.findById(req.params.id);
+      if (!player) {
+        return res.status(404).json({ message: "Player not found" });
       }
-    });
 
-    await player.save();
-    console.log("=== Player updated successfully ===");
-    res.json(player);
-  } catch (err) {
-    console.error("Player update error:", err);
-    res.status(500).json({ message: "Failed to update player", error: err.message });
+      // 🔥 Update image if uploaded
+      if (req.file) {
+        player.image = req.file.path; // ✅ Cloudinary URL
+      }
+
+      // Merge the rest of body fields
+      Object.assign(player, req.body);
+
+      await player.save();
+      res.json(player);
+    } catch (err) {
+      console.error("Player update error:", err);
+      res.status(500).json({ message: "Failed to update player" });
+    }
   }
-});
-
-
-
-// router.put(
-//   "/players/:id",
-//   authMiddleware(),
-//   upload.single("image"), 
-//   async (req, res) => {
-//     try {
-//       const player = await Player.findById(req.params.id);
-//       if (!player) {
-//         return res.status(404).json({ message: "Player not found" });
-//       }
-
-//       // 🔥 Update image if uploaded
-//       if (req.file) {
-//         player.image = req.file.path; // ✅ Cloudinary URL
-//       }
-
-//       // Merge the rest of body fields
-//       Object.assign(player, req.body);
-
-//       await player.save();
-//       res.json(player);
-//     } catch (err) {
-//       console.error("Player update error:", err);
-//       res.status(500).json({ message: "Failed to update player" });
-//     }
-//   }
-// );
+);
 
 /* ============================
    DELETE /admin/players/:id
