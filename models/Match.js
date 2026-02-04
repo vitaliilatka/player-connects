@@ -1,160 +1,152 @@
-// models/Match.js
 import mongoose from "mongoose";
 
-/*
-  Match schema
-  ----------------
-  Represents a single football match.
-  This model is the PRIMARY SOURCE OF TRUTH
-  for all player statistics and player connects.
-*/
+const { Schema } = mongoose;
 
-const goalSchema = new mongoose.Schema(
+/* =========================
+   Схема игрока в составе
+========================= */
+const LineupPlayerSchema = new Schema(
   {
-    // Player who scored the goal
-    scorer: {
-      type: mongoose.Schema.Types.ObjectId,
+    player: {
+      type: Schema.Types.ObjectId,
       ref: "Player",
       required: true
     },
-
-    // Player who assisted (can be null)
-    assist: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Player",
-      default: null
+    position: {
+      type: String,
+      enum: ["gk", "def", "mid", "fw"],
+      required: true
     },
-
-    // Optional minute of the goal
-    minute: {
+    fromMinute: {
       type: Number,
-      min: 0,
-      max: 130
+      default: 0
     }
   },
   { _id: false }
 );
 
-const matchSchema = new mongoose.Schema(
+/* =========================
+   Схема матча
+========================= */
+const MatchSchema = new Schema(
   {
-    /* ============================
-       Relations
-    ============================ */
-
-    // League this match belongs to
     league: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "League",
       required: true
     },
 
-    // Matchday number (1–38)
     matchday: {
       type: Number,
-      required: true,
-      min: 1,
-      max: 38
+      required: true
     },
-
-    /* ============================
-       Teams
-    ============================ */
 
     homeTeam: {
       type: String,
-      required: true,
-      trim: true
+      required: true
     },
 
     awayTeam: {
       type: String,
-      required: true,
-      trim: true
+      required: true
     },
 
-    /* ============================
-       Final score
-    ============================ */
+    status: {
+      type: String,
+      enum: ["draft", "live", "finished"],
+      default: "draft"
+    },
+
+    playedAt: {
+      type: Date,
+      default: Date.now
+    },
 
     score: {
-      home: {
-        type: Number,
-        default: 0
-      },
-      away: {
-        type: Number,
-        default: 0
-      }
+      home: { type: Number, default: 0 },
+      away: { type: Number, default: 0 }
     },
 
-    /* ============================
-       Lineups & substitutions
-    ============================ */
-
+    /* =========================
+       ФАКТИЧЕСКИЕ СОСТАВЫ
+    ========================= */
     lineups: {
-      home: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Player"
-        }
-      ],
-      away: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Player"
-        }
-      ]
+      home: [LineupPlayerSchema],
+      away: [LineupPlayerSchema]
     },
 
+    /* =========================
+       Замены
+    ========================= */
     subsIn: {
       home: [
         {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Player"
+          player: {
+            type: Schema.Types.ObjectId,
+            ref: "Player"
+          },
+          minute: Number
         }
       ],
       away: [
         {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Player"
+          player: {
+            type: Schema.Types.ObjectId,
+            ref: "Player"
+          },
+          minute: Number
         }
       ]
     },
 
-    /* ============================
-       Match events
-    ============================ */
-
+    /* =========================
+       События матча
+    ========================= */
     events: {
-      goals: [goalSchema],
-
-      // Man of the Match
+      goals: [
+        {
+          player: {
+            type: Schema.Types.ObjectId,
+            ref: "Player"
+          },
+          minute: Number
+        }
+      ],
       motm: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "Player",
         default: null
       }
     },
 
-    /* ============================
-       Match status
-    ============================ */
-
-    // Draft: editable
-    // Finished: locked, stats can be calculated
-    status: {
-      type: String,
-      enum: ["draft", "finished"],
-      default: "draft"
-    },
-
-    /* ============================
-       Meta
-    ============================ */
-
-    playedAt: {
-      type: Date,
-      default: Date.now
+    /* =========================
+       ПРОГНОЗ СОСТАВА (USER)
+    ========================= */
+    predictedLineups: {
+      home: [
+        {
+          player: {
+            type: Schema.Types.ObjectId,
+            ref: "Player"
+          },
+          position: {
+            type: String,
+            enum: ["gk", "def", "mid", "fw"]
+          }
+        }
+      ],
+      away: [
+        {
+          player: {
+            type: Schema.Types.ObjectId,
+            ref: "Player"
+          },
+          position: {
+            type: String,
+            enum: ["gk", "def", "mid", "fw"]
+          }
+        }
+      ]
     }
   },
   {
@@ -162,14 +154,4 @@ const matchSchema = new mongoose.Schema(
   }
 );
 
-/* ============================
-   INDEXES
-============================ */
-
-// One match per league per matchday per teams
-matchSchema.index(
-  { league: 1, matchday: 1, homeTeam: 1, awayTeam: 1 },
-  { unique: true }
-);
-
-export default mongoose.model("Match", matchSchema);
+export default mongoose.model("Match", MatchSchema);
