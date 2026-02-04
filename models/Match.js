@@ -122,32 +122,62 @@ const MatchSchema = new Schema(
     /* =========================
        ПРОГНОЗ СОСТАВА (USER)
     ========================= */
-    predictedLineups: {
-      home: [
-        {
-          player: {
-            type: Schema.Types.ObjectId,
-            ref: "Player"
-          },
-          position: {
-            type: String,
-            enum: ["gk", "def", "mid", "fw"]
+
+    predictedLineups: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true
+        },
+        team: {
+          type: String,
+          enum: ["home", "away"],
+          required: true
+        },
+        players: [
+          {
+            player: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "Player",
+              required: true
+            },
+            position: {
+              type: String,
+              enum: ["gk", "def", "mid", "fw"],
+              required: true
+            }
           }
-        }
-      ],
-      away: [
-        {
-          player: {
-            type: Schema.Types.ObjectId,
-            ref: "Player"
-          },
-          position: {
-            type: String,
-            enum: ["gk", "def", "mid", "fw"]
-          }
-        }
-      ]
-    }
+        ]
+      }
+    ]
+
+    // predictedLineups: {
+    //   home: [
+    //     {
+    //       player: {
+    //         type: Schema.Types.ObjectId,
+    //         ref: "Player"
+    //       },
+    //       position: {
+    //         type: String,
+    //         enum: ["gk", "def", "mid", "fw"]
+    //       }
+    //     }
+    //   ],
+    //   away: [
+    //     {
+    //       player: {
+    //         type: Schema.Types.ObjectId,
+    //         ref: "Player"
+    //       },
+    //       position: {
+    //         type: String,
+    //         enum: ["gk", "def", "mid", "fw"]
+    //       }
+    //     }
+    //   ]
+    // }
   },
   {
     timestamps: true
