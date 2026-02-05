@@ -6,16 +6,6 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/**
- * POST /admin/matches/:matchId/lineup
- * body:
- * {
- *   team: "home" | "away",
- *   players: [
- *     { playerId: "...", position: "gk" }
- *   ]
- * }
- */
 router.post(
   "/:matchId/lineup",
   authMiddleware("admin"),
