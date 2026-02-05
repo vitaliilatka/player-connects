@@ -123,34 +123,34 @@ const MatchSchema = new Schema(
        ПРОГНОЗ СОСТАВА (USER)
     ========================= */
 
-    predictedLineups: [
-      {
-        user: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true
-        },
-        team: {
-          type: String,
-          enum: ["home", "away"],
-          required: true
-        },
-        players: [
-          {
-            player: {
-              type: mongoose.Schema.Types.ObjectId,
-              ref: "Player",
-              required: true
-            },
-            position: {
-              type: String,
-              enum: ["gk", "def", "mid", "fw"],
-              required: true
-            }
-          }
-        ]
-      }
-    ]
+    // predictedLineups: [
+    //   {
+    //     user: {
+    //       type: mongoose.Schema.Types.ObjectId,
+    //       ref: "User",
+    //       required: true
+    //     },
+    //     team: {
+    //       type: String,
+    //       enum: ["home", "away"],
+    //       required: true
+    //     },
+    //     players: [
+    //       {
+    //         player: {
+    //           type: mongoose.Schema.Types.ObjectId,
+    //           ref: "Player",
+    //           required: true
+    //         },
+    //         position: {
+    //           type: String,
+    //           enum: ["gk", "def", "mid", "fw"],
+    //           required: true
+    //         }
+    //       }
+    //     ]
+    //   }
+    // ]
 
     // predictedLineups: {
     //   home: [

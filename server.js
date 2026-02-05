@@ -13,6 +13,8 @@ import leaguesRouter from "./routes/leagues.js";
 import adminMatchesRouter from "./routes/adminMatches.js";
 import adminTeamSquadsRouter from "./routes/adminTeamSquads.js";
 
+import matchesRouter from "./routes/matches.js";
+
 
 
 // === Environment configuration ===
@@ -47,6 +49,8 @@ app.use("/leagues", leaguesRouter); // public routes
 app.use("/admin/players", adminRoutes); // старый админ для игроков
 app.use("/admin/matches", adminMatchesRouter); // новый админ для матчей
 app.use("/admin", adminTeamSquadsRouter);
+
+app.use("/matches", matchesRouter);
 
 // === MongoDB connection ===
 mongoose
