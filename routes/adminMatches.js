@@ -118,7 +118,7 @@ router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
       position: p.position,
     }));
 
-    match.status = "confirmed";
+    match.status = "live";
     await match.save();
 
     res.json({
