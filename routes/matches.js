@@ -87,9 +87,10 @@ router.get("/:matchId/predictions", async (req, res) => {
 /* =========================
    POST /matches/:matchId/predict-lineup
 ========================= */
+
 router.post("/:matchId/predict-lineup", authMiddleware(), async (req, res) => {
   const { matchId } = req.params;
-  const { team, players } = req.body;
+  const { team, players, subs = [], motm = null } = req.body;
   const userId = req.user.id;
 
   if (!["user", "admin"].includes(req.user.role)) {
@@ -105,6 +106,10 @@ router.post("/:matchId/predict-lineup", authMiddleware(), async (req, res) => {
     return res.status(400).json({ message: validationError });
   }
 
+  if (subs.length > 5) {
+    return res.status(400).json({ message: "Max 5 subs allowed" });
+  }
+
   try {
     const match = await Match.findById(matchId);
     if (!match) return res.status(404).json({ message: "Match not found" });
@@ -115,20 +120,27 @@ router.post("/:matchId/predict-lineup", authMiddleware(), async (req, res) => {
 
     const teamName = team === "home" ? match.homeTeam : match.awayTeam;
     const squad = await TeamSquad.findOne({ team: teamName });
+    if (!squad) return res.status(404).json({ message: "Team squad not found" });
 
-    if (!squad) {
-      return res.status(404).json({ message: "Team squad not found" });
-    }
-
+    // проверка старта
     for (const p of players) {
       if (!squad.players.some(id => id.toString() === p.playerId)) {
-        return res
-          .status(400)
-          .json({ message: `Player ${p.playerId} not in squad` });
+        return res.status(400).json({ message: `Player ${p.playerId} not in squad` });
       }
     }
 
-    await UserPrediction.findOneAndUpdate(
+    // проверка замен
+    for (const s of subs) {
+      if (!squad.players.some(id => id.toString() === s.playerId)) {
+        return res.status(400).json({ message: `Sub ${s.playerId} not in squad` });
+      }
+    }
+
+    if (motm && !squad.players.some(id => id.toString() === motm)) {
+      return res.status(400).json({ message: "MOTM not in squad" });
+    }
+
+    const prediction = await UserPrediction.findOneAndUpdate(
       { user: userId, match: matchId, team },
       {
         user: userId,
@@ -136,17 +148,23 @@ router.post("/:matchId/predict-lineup", authMiddleware(), async (req, res) => {
         team,
         players: players.map(p => ({
           player: new mongoose.Types.ObjectId(p.playerId),
-          position: p.position,
+          position: p.position
         })),
-        points: 0,
+        subs: subs.map(s => ({
+          player: new mongoose.Types.ObjectId(s.playerId),
+          minute: s.minute
+        })),
+        motm: motm ? new mongoose.Types.ObjectId(motm) : null,
+        points: 0
       },
       { upsert: true, new: true }
     );
 
     res.json({
       message: "Prediction saved",
-      team,
-      playersCount: players.length,
+      players: prediction.players.length,
+      subs: prediction.subs.length,
+      motm: prediction.motm
     });
   } catch (err) {
     console.error("Prediction error:", err);
@@ -154,47 +172,130 @@ router.post("/:matchId/predict-lineup", authMiddleware(), async (req, res) => {
   }
 });
 
+
+
 /**
  * GET /matches/:matchId/compare
- * Сравнение прогнозов пользователей с фактическим составом homeTeam
  */
+
 router.get("/:matchId/compare", async (req, res) => {
   try {
-    const matchId = req.params.matchId;
+    const match = await Match.findById(req.params.matchId)
+      .populate("lineups.home.player", "name")
+      .populate("subsIn.home.player", "name")
+      .populate("events.motm", "name");
 
-    // Берём матч
-    const match = await Match.findById(matchId)
-      .populate("lineups.home.player", "name");
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
 
-    if (!match) return res.status(404).json({ message: "Match not found" });
+    const lineupIds = match.lineups.home.map(p =>
+      p.player._id.toString()
+    );
 
-    // Берём все прогнозы на этот матч
-    const predictions = await UserPrediction.find({ match: matchId, team: "home" })
+    const subIds = match.subsIn.home.map(s =>
+      s.player._id.toString()
+    );
+
+    const motmId = match.events.motm
+      ? match.events.motm._id.toString()
+      : null;
+
+    const predictions = await UserPrediction.find({
+      match: match._id,
+      team: "home",
+    })
       .populate("user", "username")
-      .populate("players.player", "name");
+      .populate("players.player", "name")
+      .populate("subs.player", "name")
+      .populate("motm", "name");
 
-    // Подсчёт очков
     const results = predictions.map(pred => {
-      const lineupIds = match.lineups.home.map(p => p.player._id.toString());
-      const predictedIds = pred.players.map(p => p.player._id.toString());
+      let points = 0;
 
-      // Считаем количество угаданных игроков
-      let points = predictedIds.filter(id => lineupIds.includes(id)).length;
+      /* ===== стартовый состав ===== */
+      const players = pred.players.map(p => {
+        const isCorrect = lineupIds.includes(p.player._id.toString());
 
-      // Бонус +3, если угаданы все 11
-      if (points === 11) points += 3;
+        if (isCorrect) points += 1;
+
+        return {
+          player: p.player,
+          position: p.position,
+          isCorrect,
+          points: isCorrect ? 1 : 0,
+        };
+      });
+
+      const correctStarters = players.filter(p => p.isCorrect).length;
+      const starterBonus = correctStarters === 11 ? 3 : 0;
+        points += starterBonus;
+        
+        /* ===== замены ===== */
+    const predictedSubIds = pred.subs.map(s =>
+        s.player._id.toString()
+    );
+
+    let correctSubs = 0;
+
+    const subs = pred.subs.map(s => {
+        const isCorrect = subIds.includes(s.player._id.toString());
+
+    if (isCorrect) {
+        correctSubs += 1;
+        points += 1;
+    }
+
+    return {
+        player: s.player,
+        isCorrect,
+        points: isCorrect ? 1 : 0,
+    };
+    });
+
+    /*
+    БОНУС ТОЛЬКО ЕСЛИ:
+    - есть замены в матче
+    - количество совпадает
+    - все угаданы
+    */
+    const subsBonus =
+        subIds.length > 0 &&
+        predictedSubIds.length === subIds.length &&
+        correctSubs === subIds.length
+            ? 3
+            : 0;
+
+    points += subsBonus;
+
+
+      /* ===== MOTM ===== */
+      let motmCorrect = false;
+      if (motmId && pred.motm) {
+        motmCorrect = pred.motm._id.toString() === motmId;
+        if (motmCorrect) points += 3;
+      }
 
       return {
         user: pred.user,
-        points,
-        predicted: pred.players.map(p => ({
-          id: p.player._id,
-          name: p.player.name
-        })),
-        lineup: match.lineups.home.map(p => ({
-          id: p.player._id,
-          name: p.player.name
-        }))
+        totalPoints: points,
+
+        starters: {
+          players,
+          bonus: starterBonus,
+        },
+
+        subs: {
+          players: subs,
+          bonus: subsBonus,
+        },
+
+        motm: {
+          predicted: pred.motm,
+          actual: match.events.motm,
+          isCorrect: motmCorrect,
+          points: motmCorrect ? 3 : 0,
+        },
       };
     });
 
@@ -204,6 +305,7 @@ router.get("/:matchId/compare", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 
 export default router;
 
