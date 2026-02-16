@@ -1,4 +1,3 @@
-// routes/matches.js
 import express from "express";
 import mongoose from "mongoose";
 import Match from "../models/Match.js";
@@ -9,59 +8,105 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 /* =========================
-   helpers
+   VALIDATE LINEUP
 ========================= */
-
 function validateLineup(players) {
-  if (!Array.isArray(players)) {
-    return "Players must be an array";
-  }
-
-  if (players.length !== 11) {
-    return "Lineup must contain exactly 11 players";
-  }
+  if (!Array.isArray(players)) return "Players must be an array";
+  if (players.length !== 11) return "Lineup must contain exactly 11 players";
 
   const ids = new Set();
   let gkCount = 0;
 
   for (const p of players) {
-    if (!p.playerId || !p.position) {
+    if (!p.playerId || !p.position)
       return "Each player must have playerId and position";
-    }
 
-    if (ids.has(p.playerId)) {
+    if (ids.has(p.playerId))
       return "Duplicate players are not allowed";
-    }
 
     ids.add(p.playerId);
 
-    if (p.position === "gk") {
-      gkCount++;
-    }
+    if (p.position === "gk") gkCount++;
   }
 
-  if (gkCount !== 1) {
-    return "Exactly one GK is required";
-  }
+  if (gkCount !== 1) return "Exactly one GK is required";
 
   return null;
 }
 
 /* =========================
-   GET /matches/:matchId
+   POST PREDICT LINEUP
 ========================= */
-router.get("/:matchId", async (req, res) => {
+router.post("/:matchId/predict-lineup", authMiddleware(), async (req, res) => {
   try {
-    const match = await Match.findById(req.params.matchId)
-      .populate("league", "name")
-      .populate("lineups.home.player", "name")
-      .populate("lineups.away.player", "name");
+    const { matchId } = req.params;
+    const {
+      team,
+      players,
+      subs = [],
+      motm = null,
+      goals = [],
+      predictedScore = { home: 0, away: 0 }
+    } = req.body;
 
-    if (!match) {
-      return res.status(404).json({ message: "Match not found" });
-    }
+    const userId = req.user.id;
 
-    res.json(match);
+    const validationError = validateLineup(players);
+    if (validationError)
+      return res.status(400).json({ message: validationError });
+
+    const match = await Match.findById(matchId);
+    if (!match) return res.status(404).json({ message: "Match not found" });
+
+    if (match.status !== "draft")
+      return res.status(400).json({ message: "Predictions closed" });
+
+    const teamName = team === "home" ? match.homeTeam : match.awayTeam;
+    const squad = await TeamSquad.findOne({ team: teamName });
+    if (!squad)
+      return res.status(404).json({ message: "Team squad not found" });
+
+    const prediction = await UserPrediction.findOneAndUpdate(
+      { user: userId, match: matchId, team },
+      {
+        user: userId,
+        match: matchId,
+        team,
+
+        players: players.map(p => ({
+          player: new mongoose.Types.ObjectId(p.playerId),
+          position: p.position
+        })),
+
+        subs: subs.map(s => ({
+          player: new mongoose.Types.ObjectId(s.playerId),
+          minute: s.minute || null
+        })),
+
+        goals: goals.map(g => ({
+          scorer: new mongoose.Types.ObjectId(g.scorer),
+          assist: g.assist
+            ? new mongoose.Types.ObjectId(g.assist)
+            : null
+        })),
+
+        predictedScore,
+
+        motm: motm
+          ? new mongoose.Types.ObjectId(motm)
+          : null,
+
+        points: 0
+      },
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      message: "Prediction saved",
+      goals: prediction.goals.length,
+      score: prediction.predictedScore
+    });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -85,227 +130,108 @@ router.get("/:matchId/predictions", async (req, res) => {
 });
 
 /* =========================
-   POST /matches/:matchId/predict-lineup
+   COMPARE
 ========================= */
-
-router.post("/:matchId/predict-lineup", authMiddleware(), async (req, res) => {
-  const { matchId } = req.params;
-  const { team, players, subs = [], motm = null } = req.body;
-  const userId = req.user.id;
-
-  if (!["user", "admin"].includes(req.user.role)) {
-    return res.status(403).json({ message: "Only users can make predictions" });
-  }
-
-  if (!["home", "away"].includes(team)) {
-    return res.status(400).json({ message: "Invalid team" });
-  }
-
-  const validationError = validateLineup(players);
-  if (validationError) {
-    return res.status(400).json({ message: validationError });
-  }
-
-  if (subs.length > 5) {
-    return res.status(400).json({ message: "Max 5 subs allowed" });
-  }
-
-  try {
-    const match = await Match.findById(matchId);
-    if (!match) return res.status(404).json({ message: "Match not found" });
-
-    if (match.status !== "draft") {
-      return res.status(400).json({ message: "Predictions are closed" });
-    }
-
-    const teamName = team === "home" ? match.homeTeam : match.awayTeam;
-    const squad = await TeamSquad.findOne({ team: teamName });
-    if (!squad) return res.status(404).json({ message: "Team squad not found" });
-
-    // проверка старта
-    for (const p of players) {
-      if (!squad.players.some(id => id.toString() === p.playerId)) {
-        return res.status(400).json({ message: `Player ${p.playerId} not in squad` });
-      }
-    }
-
-    // проверка замен
-    for (const s of subs) {
-      if (!squad.players.some(id => id.toString() === s.playerId)) {
-        return res.status(400).json({ message: `Sub ${s.playerId} not in squad` });
-      }
-    }
-
-    if (motm && !squad.players.some(id => id.toString() === motm)) {
-      return res.status(400).json({ message: "MOTM not in squad" });
-    }
-
-    const prediction = await UserPrediction.findOneAndUpdate(
-      { user: userId, match: matchId, team },
-      {
-        user: userId,
-        match: matchId,
-        team,
-        players: players.map(p => ({
-          player: new mongoose.Types.ObjectId(p.playerId),
-          position: p.position
-        })),
-        subs: subs.map(s => ({
-          player: new mongoose.Types.ObjectId(s.playerId),
-          minute: s.minute
-        })),
-        motm: motm ? new mongoose.Types.ObjectId(motm) : null,
-        points: 0
-      },
-      { upsert: true, new: true }
-    );
-
-    res.json({
-      message: "Prediction saved",
-      players: prediction.players.length,
-      subs: prediction.subs.length,
-      motm: prediction.motm
-    });
-  } catch (err) {
-    console.error("Prediction error:", err);
-    res.status(500).json({ message: err.message });
-  }
-});
-
-
-
-/**
- * GET /matches/:matchId/compare
- */
-
 router.get("/:matchId/compare", async (req, res) => {
   try {
     const match = await Match.findById(req.params.matchId)
       .populate("lineups.home.player", "name")
       .populate("subsIn.home.player", "name")
+      .populate("events.goals.home.scorer", "name")
+      .populate("events.goals.home.assist", "name")
       .populate("events.motm", "name");
 
-    if (!match) {
+    if (!match)
       return res.status(404).json({ message: "Match not found" });
-    }
-
-    const lineupIds = match.lineups.home.map(p =>
-      p.player._id.toString()
-    );
-
-    const subIds = match.subsIn.home.map(s =>
-      s.player._id.toString()
-    );
-
-    const motmId = match.events.motm
-      ? match.events.motm._id.toString()
-      : null;
 
     const predictions = await UserPrediction.find({
-      match: match._id,
-      team: "home",
+      match: match._id
     })
       .populate("user", "username")
-      .populate("players.player", "name")
-      .populate("subs.player", "name")
+      .populate("goals.scorer", "name")
+      .populate("goals.assist", "name")
       .populate("motm", "name");
 
-    const results = predictions.map(pred => {
-      let points = 0;
+    const results = [];
 
-      /* ===== стартовый состав ===== */
-      const players = pred.players.map(p => {
-        const isCorrect = lineupIds.includes(p.player._id.toString());
+    for (const pred of predictions) {
+      let totalPoints = 0;
 
-        if (isCorrect) points += 1;
+      /* =====================
+         GOALS
+      ===================== */
+      const actualGoals = match.events.goals[pred.team] || [];
+      const predictedGoals = pred.goals || [];
+
+      let goalsPoints = 0;
+
+      const goalResults = predictedGoals.map(pg => {
+        let scorerCorrect = false;
+        let assistCorrect = false;
+        let linkCorrect = false;
+
+        actualGoals.forEach(ag => {
+          if (ag.scorer._id.toString() === pg.scorer._id.toString()) {
+            scorerCorrect = true;
+
+            if (
+              ag.assist &&
+              pg.assist &&
+              ag.assist._id.toString() === pg.assist._id.toString()
+            ) {
+              assistCorrect = true;
+              linkCorrect = true;
+            }
+          }
+        });
+
+        if (scorerCorrect) goalsPoints += 3;
+        if (assistCorrect) goalsPoints += 3;
+        if (linkCorrect) goalsPoints += 3;
 
         return {
-          player: p.player,
-          position: p.position,
-          isCorrect,
-          points: isCorrect ? 1 : 0,
+          scorer: pg.scorer,
+          assist: pg.assist,
+          scorerCorrect,
+          assistCorrect,
+          linkCorrect
         };
       });
 
-      const correctStarters = players.filter(p => p.isCorrect).length;
-      const starterBonus = correctStarters === 11 ? 3 : 0;
-        points += starterBonus;
-        
-        /* ===== замены ===== */
-    const predictedSubIds = pred.subs.map(s =>
-        s.player._id.toString()
-    );
+      totalPoints += goalsPoints;
 
-    let correctSubs = 0;
+      /* =====================
+         SCORE
+      ===================== */
+      const scoreCorrect =
+        pred.predictedScore.home === match.score.home &&
+        pred.predictedScore.away === match.score.away;
 
-    const subs = pred.subs.map(s => {
-        const isCorrect = subIds.includes(s.player._id.toString());
+      if (scoreCorrect) totalPoints += 5;
 
-    if (isCorrect) {
-        correctSubs += 1;
-        points += 1;
+      /* =====================
+         SAVE
+      ===================== */
+      pred.points = totalPoints;
+      await pred.save();
+
+      results.push({
+        user: pred.user,
+        totalPoints,
+        goals: goalResults,
+        score: {
+          predicted: pred.predictedScore,
+          actual: match.score,
+          correct: scoreCorrect
+        }
+      });
     }
 
-    return {
-        player: s.player,
-        isCorrect,
-        points: isCorrect ? 1 : 0,
-    };
-    });
-
-    /*
-    БОНУС ТОЛЬКО ЕСЛИ:
-    - есть замены в матче
-    - количество совпадает
-    - все угаданы
-    */
-    const subsBonus =
-        subIds.length > 0 &&
-        predictedSubIds.length === subIds.length &&
-        correctSubs === subIds.length
-            ? 3
-            : 0;
-
-    points += subsBonus;
-
-
-      /* ===== MOTM ===== */
-      let motmCorrect = false;
-      if (motmId && pred.motm) {
-        motmCorrect = pred.motm._id.toString() === motmId;
-        if (motmCorrect) points += 3;
-      }
-
-      return {
-        user: pred.user,
-        totalPoints: points,
-
-        starters: {
-          players,
-          bonus: starterBonus,
-        },
-
-        subs: {
-          players: subs,
-          bonus: subsBonus,
-        },
-
-        motm: {
-          predicted: pred.motm,
-          actual: match.events.motm,
-          isCorrect: motmCorrect,
-          points: motmCorrect ? 3 : 0,
-        },
-      };
-    });
-
     res.json(results);
+
   } catch (err) {
-    console.error("Compare error:", err);
     res.status(500).json({ message: err.message });
   }
 });
 
-
 export default router;
-

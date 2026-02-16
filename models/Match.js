@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 /* =========================
-   Схема игрока в составе
+   Состав игрока
 ========================= */
 const LineupPlayerSchema = new Schema(
   {
@@ -26,7 +26,30 @@ const LineupPlayerSchema = new Schema(
 );
 
 /* =========================
-   Схема матча
+   Гол
+========================= */
+const GoalSchema = new Schema(
+  {
+    scorer: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
+      required: true
+    },
+    assist: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
+      default: null
+    },
+    minute: {
+      type: Number,
+      default: null
+    }
+  },
+  { _id: false }
+);
+
+/* =========================
+   Матч
 ========================= */
 const MatchSchema = new Schema(
   {
@@ -68,7 +91,7 @@ const MatchSchema = new Schema(
     },
 
     /* =========================
-       ФАКТИЧЕСКИЕ СОСТАВЫ
+       Составы
     ========================= */
     lineups: {
       home: [LineupPlayerSchema],
@@ -81,47 +104,35 @@ const MatchSchema = new Schema(
     subsIn: {
       home: [
         {
-          player: {
-            type: Schema.Types.ObjectId,
-            ref: "Player"
-          },
+          player: { type: Schema.Types.ObjectId, ref: "Player" },
           minute: Number
         }
       ],
       away: [
         {
-          player: {
-            type: Schema.Types.ObjectId,
-            ref: "Player"
-          },
+          player: { type: Schema.Types.ObjectId, ref: "Player" },
           minute: Number
         }
       ]
     },
 
     /* =========================
-       События матча
+       События
     ========================= */
     events: {
-      goals: [
-        {
-          player: {
-            type: Schema.Types.ObjectId,
-            ref: "Player"
-          },
-          minute: Number
-        }
-      ],
+      goals: {
+        home: [GoalSchema],
+        away: [GoalSchema]
+      },
       motm: {
         type: Schema.Types.ObjectId,
         ref: "Player",
         default: null
       }
-    },
+    }
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true }
 );
 
 export default mongoose.model("Match", MatchSchema);
+

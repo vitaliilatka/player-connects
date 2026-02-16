@@ -3,85 +3,114 @@ import mongoose from "mongoose";
 const { Schema, model, Types } = mongoose;
 
 /* =========================
-   Стартовый состав (11)
+   Старт
 ========================= */
 const playerPredictionSchema = new Schema(
   {
     player: {
       type: Types.ObjectId,
       ref: "Player",
-      required: true,
+      required: true
     },
     position: {
       type: String,
       enum: ["gk", "def", "mid", "fw"],
-      required: true,
-    },
+      required: true
+    }
   },
   { _id: false }
 );
 
 /* =========================
-   Замены (до 5)
+   Замены
 ========================= */
 const subPredictionSchema = new Schema(
   {
     player: {
       type: Types.ObjectId,
       ref: "Player",
-      required: true,
+      required: true
     },
     minute: {
       type: Number,
-      default: null,
-    },
+      default: null
+    }
   },
   { _id: false }
 );
 
 /* =========================
-   Прогноз пользователя
+   Гол в прогнозе
+========================= */
+const goalPredictionSchema = new Schema(
+  {
+    scorer: {
+      type: Types.ObjectId,
+      ref: "Player",
+      required: true
+    },
+    assist: {
+      type: Types.ObjectId,
+      ref: "Player",
+      default: null
+    }
+  },
+  { _id: false }
+);
+
+/* =========================
+   Прогноз
 ========================= */
 const userPredictionSchema = new Schema(
   {
     user: {
       type: Types.ObjectId,
       ref: "User",
-      required: true,
+      required: true
     },
 
     match: {
       type: Types.ObjectId,
       ref: "Match",
-      required: true,
+      required: true
     },
 
     team: {
       type: String,
       enum: ["home", "away"],
-      required: true,
+      required: true
     },
 
     players: {
       type: [playerPredictionSchema],
-      required: true,
+      required: true
     },
 
     subs: {
       type: [subPredictionSchema],
-      default: [],
+      default: []
+    },
+
+    goals: {
+      type: [goalPredictionSchema],
+      default: []
+    },
+
+    predictedScore: {
+      home: { type: Number, default: 0 },
+      away: { type: Number, default: 0 }
     },
 
     motm: {
       type: Types.ObjectId,
       ref: "Player",
-      default: null,
+      default: null
     },
 
     points: {
       type: Number,
-      default: 0,
-    },
+      default: 0
+    }
   },
   { timestamps: true }
 );

@@ -136,49 +136,48 @@ router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
  * POST /admin/matches/:matchId/result
  * Фактические замены и MOTM
  */
+
 router.post(
-  "/:matchId/result",
+  "/:id/result",
   authMiddleware("admin"),
   async (req, res) => {
-    const { matchId } = req.params;
-    const { team, subs, motm } = req.body;
-
-    if (!["home", "away"].includes(team)) {
-      return res.status(400).json({ message: "Invalid team" });
-    }
-
     try {
-      const match = await Match.findById(matchId);
+      const { team, subs, goals, motm, score } = req.body;
+
+      const match = await Match.findById(req.params.id);
       if (!match) {
         return res.status(404).json({ message: "Match not found" });
       }
 
-      // ===== Замены =====
-      if (Array.isArray(subs)) {
-        match.subsIn[team] = subs.map(s => ({
-          player: new mongoose.Types.ObjectId(s.playerId),
-          minute: s.minute
-        }));
+      if (subs && team) {
+        match.subsIn[team] = subs;
       }
 
-      // ===== MOTM =====
-      if (motm) {
-        match.events.motm = new mongoose.Types.ObjectId(motm);
+      if (goals && team) {
+        match.events.goals[team] = goals;
       }
+
+      if (score) {
+        match.score.home = score.home;
+        match.score.away = score.away;
+      }
+
+      if (motm) {
+        match.events.motm = motm;
+      }
+
+      match.status = "finished";
 
       await match.save();
 
-      res.json({
-        message: "Match result updated",
-        subsCount: match.subsIn[team]?.length || 0,
-        motm: match.events.motm
-      });
+      res.json({ message: "Match result updated" });
+
     } catch (err) {
-      console.error("Result error:", err);
       res.status(500).json({ message: err.message });
     }
   }
 );
+
 
 
 export default router;
