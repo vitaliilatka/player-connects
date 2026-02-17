@@ -99,6 +99,23 @@ router.post("/:matchId/predict-lineup", authMiddleware(), async (req, res) => {
 });
 
 /* =========================
+   GET /matches/:matchId/predictions
+========================= */
+router.get("/:matchId/predictions", async (req, res) => {
+  try {
+    const predictions = await UserPrediction.find({
+      match: req.params.matchId,
+    })
+      .populate("user", "username")
+      .populate("players.player", "name rating");
+
+    res.json(predictions);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/* =========================
    COMPARE
 ========================= */
 router.get("/:matchId/compare", async (req, res) => {

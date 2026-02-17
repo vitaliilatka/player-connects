@@ -83,7 +83,7 @@ router.post("/", authMiddleware("admin"), async (req, res) => {
    POST /admin/matches/:matchId/lineup
 ========================= */
 router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
-  const { team, players } = req.body;
+  const { team, players, subs = [] } = req.body;
 
   if (!["home", "away"].includes(team)) {
     return res.status(400).json({ message: "Invalid team" });
@@ -115,7 +115,12 @@ router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
 
     match.lineups[team] = players.map(p => ({
       player: new mongoose.Types.ObjectId(p.playerId),
-      position: p.position,
+      position: p.position.toLowerCase(),
+    }));
+
+    match.subsIn[team] = subs.map(s => ({
+      player: new mongoose.Types.ObjectId(s.playerId),
+      minute: s.minute || null
     }));
 
     match.status = "live";
