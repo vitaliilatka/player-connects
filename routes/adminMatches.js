@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 import Match from "../models/Match.js";
 import TeamSquad from "../models/TeamSquad.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import { processMatch } from "../services/matchProcessor.js";
+
 
 const router = express.Router();
 
@@ -34,7 +36,7 @@ function validateLineup(players) {
 
     ids.add(p.playerId);
 
-    if (p.position === "gk") {
+    if (p.position.toUpperCase === "GK") {
       gkCount++;
     }
   }
@@ -115,7 +117,7 @@ router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
 
     match.lineups[team] = players.map(p => ({
       player: new mongoose.Types.ObjectId(p.playerId),
-      position: p.position.toLowerCase(),
+      position: p.position.toUpperCase(),
     }));
 
     match.status = "live";
@@ -188,6 +190,9 @@ router.post(
       match.status = "finished";
 
       await match.save();
+
+      await processMatch(match);
+
 
       res.json({
         message: "Match result saved",

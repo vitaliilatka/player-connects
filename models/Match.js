@@ -14,7 +14,7 @@ const LineupPlayerSchema = new Schema(
     },
     position: {
       type: String,
-      enum: ["gk", "def", "mid", "fw"],
+      enum: ["GK", "DEF", "MID", "FW"],
       required: true
     },
     fromMinute: {
@@ -78,6 +78,11 @@ const MatchSchema = new Schema(
       type: String,
       enum: ["draft", "live", "finished"],
       default: "draft"
+    },
+
+    processed: {
+      type: Boolean,
+      default: false
     },
 
     playedAt: {
