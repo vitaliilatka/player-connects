@@ -2,106 +2,239 @@
 
 import Player from "../models/Player.js";
 
+/*
+========================================
+HELPERS
+========================================
+*/
+
+function buildTimeline(match, team) {
+  const timeline = {};
+
+  const lineup = match.lineups[team] || [];
+  const subs = match.substitutions?.[team] || [];
+
+  // starting XI
+  for (const p of lineup) {
+    timeline[p.player.toString()] = {
+      from: 0,
+      to: 120
+    };
+  }
+
+  // substitutions
+  for (const s of subs) {
+    const outId = s.playerOut.toString();
+    const inId = s.playerIn.toString();
+
+    if (timeline[outId]) {
+      timeline[outId].to = s.minute;
+    }
+
+    timeline[inId] = {
+      from: s.minute,
+      to: 120
+    };
+  }
+
+  return timeline;
+}
+
+function playerWasOnField(timeline, playerId, minute) {
+  const slot = timeline[playerId];
+  if (!slot) return false;
+
+  return minute >= slot.from && minute <= slot.to;
+}
+
+async function inc(playerId, stat, value = 1) {
+  await Player.findByIdAndUpdate(playerId, {
+    $inc: { [stat]: value }
+  });
+}
+
+/*
+========================================
+MAIN PROCESSOR
+========================================
+*/
+
 export async function processMatch(match) {
   if (match.processed) return;
 
   const homeGoals = match.score.home;
   const awayGoals = match.score.away;
 
-  const isDraw = homeGoals === awayGoals;
+  const draw = homeGoals === awayGoals;
   const homeWin = homeGoals > awayGoals;
   const awayWin = awayGoals > homeGoals;
 
-  /* =========================
-     PROCESS TEAM
-  ========================= */
+  const homeTimeline = buildTimeline(match, "home");
+  const awayTimeline = buildTimeline(match, "away");
 
-  async function processTeam(teamKey, goalsFor, goalsAgainst, isWinner) {
-    const lineup = match.lineups[teamKey] || [];
-    const subs = match.subsIn[teamKey] || [];
-    const goals = match.events.goals[teamKey] || [];
+  /*
+  ========================================
+  BASE PLAYER STATS
+  ========================================
+  */
 
-    /* STARTING XI */
+  async function processBase(team, timeline, goalsAgainst, isWinner) {
+    const lineup = match.lineups[team] || [];
+    const subs = match.substitutions?.[team] || [];
+
     for (const p of lineup) {
-      const player = await Player.findById(p.player);
-      if (!player) continue;
+      const id = p.player;
 
-      player.games += 1;
-      player.starts += 1;
+      await inc(id, "games", 1);
+      await inc(id, "starts", 1);
 
-      if (isDraw) player.draws += 1;
-      else if (isWinner) player.wins += 1;
-      else player.losses += 1;
+      if (draw) await inc(id, "draws", 1);
+      else if (isWinner) await inc(id, "wins", 1);
+      else await inc(id, "losses", 1);
+
+      const player = await Player.findById(id);
 
       if (
         goalsAgainst === 0 &&
         (player.position === "GK" || player.position === "DEF")
       ) {
-        player.cleansheets += 1;
+        await inc(id, "cleansheets", 1);
       }
 
       if (player.position === "GK" || player.position === "DEF") {
-        player.goalsconceded += goalsAgainst;
+        await inc(id, "goalsconceded", goalsAgainst);
       }
-
-      await player.save();
     }
 
-    /* SUBS */
     for (const s of subs) {
-      const player = await Player.findById(s.player);
-      if (!player) continue;
+      const id = s.playerIn;
 
-      player.games += 1;
-      player.subs_in += 1;
+      await inc(id, "games", 1);
+      await inc(id, "subsIn", 1);
 
-      if (isDraw) player.draws += 1;
-      else if (isWinner) player.wins += 1;
-      else player.losses += 1;
-
-      if (
-        goalsAgainst === 0 &&
-        (player.position === "GK" || player.position === "DEF")
-      ) {
-        player.cleansheets += 1;
-      }
-
-      if (player.position === "GK" || player.position === "DEF") {
-        player.goalsconceded += goalsAgainst;
-      }
-
-      await player.save();
+      if (draw) await inc(id, "draws", 1);
+      else if (isWinner) await inc(id, "wins", 1);
+      else await inc(id, "losses", 1);
     }
+  }
 
-    /* GOALS & ASSISTS */
+  await processBase("home", homeTimeline, awayGoals, homeWin);
+  await processBase("away", awayTimeline, homeGoals, awayWin);
+
+  /*
+  ========================================
+  GOALS
+  ========================================
+  */
+
+  async function processGoals(team, timeline, opponentTimeline) {
+    const goals = match.events.goals?.[team] || [];
+
     for (const g of goals) {
-      const scorer = await Player.findById(g.scorer);
-      if (scorer) {
-        scorer.goals += 1;
-        await scorer.save();
+      const minute = g.minute;
+
+      const scorer = g.scorer?.toString();
+
+      if (scorer && playerWasOnField(timeline, scorer, minute)) {
+        await inc(scorer, "goals", 1);
       }
 
       if (g.assist) {
-        const assist = await Player.findById(g.assist);
-        if (assist) {
-          assist.assists += 1;
-          await assist.save();
+        const assist = g.assist.toString();
+
+        if (playerWasOnField(timeline, assist, minute)) {
+          await inc(assist, "assists", 1);
         }
       }
-    }
 
-    /* MOTM */
-    if (match.events.motm) {
-      const motmPlayer = await Player.findById(match.events.motm);
-      if (motmPlayer) {
-        motmPlayer.bonus += 1;
-        await motmPlayer.save();
+      if (g.penalty?.isPenalty && g.penalty?.earnedBy) {
+        await inc(g.penalty.earnedBy, "penalty_earned", 1);
+      }
+
+      if (g.ownGoal) {
+        await inc(scorer, "ownGoals", 1);
       }
     }
   }
 
-  await processTeam("home", homeGoals, awayGoals, homeWin);
-  await processTeam("away", awayGoals, homeGoals, awayWin);
+  await processGoals("home", homeTimeline, awayTimeline);
+  await processGoals("away", awayTimeline, homeTimeline);
+
+  /*
+  ========================================
+  MISSED PENALTIES
+  ========================================
+  */
+
+  async function processMissedPenalties(team, timeline, opponentTimeline) {
+    const list = match.events.missedPenalties?.[team] || [];
+
+    for (const p of list) {
+      const minute = p.minute;
+      const taker = p.takenBy?.toString();
+
+      if (taker && playerWasOnField(timeline, taker, minute)) {
+        await inc(taker, "penalty_missed", 1);
+      }
+
+      if (p.earnedBy) {
+        await inc(p.earnedBy, "penalty_earned", 1);
+      }
+
+      // detect goalkeeper opponent
+      for (const pid in opponentTimeline) {
+        const player = await Player.findById(pid);
+
+        if (
+          player.position === "GK" &&
+          playerWasOnField(opponentTimeline, pid, minute)
+        ) {
+          await inc(pid, "penalty_saved", 1);
+          break;
+        }
+      }
+    }
+  }
+
+  await processMissedPenalties("home", homeTimeline, awayTimeline);
+  await processMissedPenalties("away", awayTimeline, homeTimeline);
+
+  /*
+  ========================================
+  CARDS
+  ========================================
+  */
+
+  async function processCards(team, timeline) {
+    const cards = match.events.cards?.[team] || [];
+
+    for (const c of cards) {
+      const pid = c.player.toString();
+
+      if (!playerWasOnField(timeline, pid, c.minute)) continue;
+
+      if (c.type === "yellow") {
+        await inc(pid, "yellowcards", 1);
+      }
+
+      if (c.type === "red") {
+        await inc(pid, "redcards", 1);
+      }
+    }
+  }
+
+  await processCards("home", homeTimeline);
+  await processCards("away", awayTimeline);
+
+  /*
+  ========================================
+  MOTM
+  ========================================
+  */
+
+  if (match.events.motm) {
+    await inc(match.events.motm, "bonus", 1);
+  }
 
   match.processed = true;
   await match.save();

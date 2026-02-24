@@ -1,146 +1,111 @@
-// models/Player.js
 import mongoose from "mongoose";
 
 /*
   Player schema
   ----------------
   Stores player metadata and aggregated statistics.
-  IMPORTANT:
-  - All stats are DERIVED from matches
-  - Stats must NOT be edited manually
+  All stats are derived from matches.
 */
 
 const playerSchema = new mongoose.Schema(
   {
-    // Player display name (not globally unique)
+    /* ============================
+       Basic Info
+    ============================ */
+
     name: {
       type: String,
       required: true,
       trim: true
     },
 
-    // Team name (e.g. LIV, ARS, BRI)
     team: {
       type: String,
       default: ""
     },
 
-    // Relation: player belongs to a specific league
     league: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "League",
       required: true
     },
 
-    // Player position (GK, DEF, MID, FW)
     position: {
       type: String,
+      enum: ["GK", "DEF", "MID", "FW"],
       required: true
     },
 
-    /* ============================
-       Aggregated match statistics
-       (calculated, not editable)
-    ============================ */
-
-    games: {
-      type: Number,
-      default: 0
-    },
-
-    goals: {
-      type: Number,
-      default: 0
-    },
-
-    assists: {
-      type: Number,
-      default: 0
-    },
-
-    blocks: {
-      type: Number,
-      default: 0
-    },
-
-    saves: {
-      type: Number,
-      default: 0
-    },
-
-    cleansheets: {
-      type: Number,
-      default: 0
-    },
-
-    goalsconceded: {
-      type: Number,
-      default: 0
+    image: {
+      type: String,
+      default: ""
     },
 
     /* ============================
-       Penalty statistics
+       Participation
     ============================ */
 
-    penalty_earned: {
-      type: Number,
-      default: 0
-    },
+    games: { type: Number, default: 0 },
 
-    penalty_missed: {
-      type: Number,
-      default: 0
-    },
+    starts: { type: Number, default: 0 },
 
-    penalty_saved: {
-      type: Number,
-      default: 0
-    },
+    subs_in: { type: Number, default: 0 },
+
+    wins: { type: Number, default: 0 },
+
+    draws: { type: Number, default: 0 },
+
+    losses: { type: Number, default: 0 },
+
+    /* ============================
+       Attacking
+    ============================ */
+
+    goals: { type: Number, default: 0 },
+
+    assists: { type: Number, default: 0 },
+
+    /* ============================
+       Defensive
+    ============================ */
+
+    saves: { type: Number, default: 0 },
+
+    cleansheets: { type: Number, default: 0 },
+
+    goalsconceded: { type: Number, default: 0 },
+
+    /* ============================
+       Penalties
+    ============================ */
+
+    penalty_earned: { type: Number, default: 0 },
+
+    penalty_missed: { type: Number, default: 0 },
+
+    penalty_saved: { type: Number, default: 0 },
 
     /* ============================
        Discipline
     ============================ */
 
-    yellowcards: {
-      type: Number,
-      default: 0
-    },
+    yellowcards: { type: Number, default: 0 },
 
-    redcards: {
-      type: Number,
-      default: 0
-    },
+    redcards: { type: Number, default: 0 },
 
     /* ============================
-       Bonus points
+       Bonus
     ============================ */
 
-    bonus: {
-      type: Number,
-      default: 0
-    },
-
-    /* ============================
-       Media
-    ============================ */
-
-    // Player image (Cloudinary URL)
-    image: {
-      type: String,
-      default: ""
-    }
+    bonus: { type: Number, default: 0 }
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true }
 );
 
 /* ============================
-   INDEXES
-   ----------------------------
-   Player name must be unique
-   ONLY inside the same league
+   Unique name inside league
 ============================ */
+
 playerSchema.index(
   { name: 1, league: 1 },
   { unique: true }
@@ -148,35 +113,56 @@ playerSchema.index(
 
 /* ============================
    VIRTUAL: RATING
-   ----------------------------
-   Calculated dynamically
-   based on aggregated stats
 ============================ */
+
 playerSchema.virtual("rating").get(function () {
-  return Math.round(
-    (this.games ?? 0) * 2 +
-    (this.goals ?? 0) * 4 +
-    (this.assists ?? 0) * 3 +
-    (this.cleansheets ?? 0) * 4 +
-    (this.saves ?? 0) +
-    (this.blocks ?? 0) +
-    (this.penalty_earned ?? 0) * 2 +
-    (this.penalty_saved ?? 0) * 4 +
-    (this.bonus ?? 0) * 3 -
-    (this.goalsconceded ?? 0) -
-    (this.penalty_missed ?? 0) * 2 -
-    (this.yellowcards ?? 0) -
-    (this.redcards ?? 0) * 2
-  );
+  let score = 0;
+
+  /* Participation */
+  score += (this.games ?? 0) * 1;
+  score += (this.starts ?? 0) * 2;
+  score += (this.subs_in ?? 0) * 1;
+
+  /* Results */
+  score += (this.wins ?? 0) * 3;
+  score += (this.draws ?? 0) * 1;
+  // losses = 0
+
+  /* Attacking */
+  score += (this.goals ?? 0) * 4;
+  score += (this.assists ?? 0) * 3;
+
+  /* Defensive (GK & DEF only) */
+  if (this.position === "GK" || this.position === "DEF") {
+    score += (this.cleansheets ?? 0) * 4;
+    score -= (this.goalsconceded ?? 0) * 1;
+  }
+
+  /* Penalties */
+  score += (this.penalty_earned ?? 0) * 3;
+  score += (this.penalty_saved ?? 0) * 4;
+  score -= (this.penalty_missed ?? 0) * 2;
+
+  /* Discipline */
+  score -= (this.yellowcards ?? 0) * 1;
+  score -= (this.redcards ?? 0) * 2;
+
+  /* Bonus */
+  score += (this.bonus ?? 0) * 3;
+
+  /* Extra defensive stats */
+  score += (this.saves ?? 0) * 1;
+
+  return Math.round(score);
 });
 
 /* ============================
-   JSON OUTPUT SETTINGS
+   JSON settings
 ============================ */
+
 playerSchema.set("toJSON", {
   virtuals: true,
   versionKey: false
 });
 
 export default mongoose.model("Player", playerSchema);
-

@@ -26,7 +26,7 @@ function validateLineup(players) {
 
     ids.add(p.playerId);
 
-    if (p.position === "gk") gkCount++;
+    if (p.position === "GK") gkCount++;
   }
 
   if (gkCount !== 1) return "Exactly one GK is required";
@@ -161,7 +161,7 @@ router.get("/:matchId/compare", async (req, res) => {
       /* =====================
          SUBSTITUTIONS
       ===================== */
-      const actualSubs = match.subsIn[pred.team] || [];
+      const actualSubs = match.substitutions?.[pred.team] || [];
       const predictedSubs = pred.subs || [];
 
       let subsCorrect = 0;
@@ -169,7 +169,7 @@ router.get("/:matchId/compare", async (req, res) => {
       predictedSubs.forEach(ps => {
         if (
           actualSubs.some(
-            as => as.player.toString() === ps.player.toString()
+            as => as.playerIn.toString() === ps.player.toString()
           )
         ) subsCorrect++;
       });

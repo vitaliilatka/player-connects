@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 /* =========================
-   Состав игрока
+   LINEUP PLAYER
 ========================= */
 const LineupPlayerSchema = new Schema(
   {
@@ -12,21 +12,43 @@ const LineupPlayerSchema = new Schema(
       ref: "Player",
       required: true
     },
+
     position: {
       type: String,
       enum: ["GK", "DEF", "MID", "FW"],
       required: true
-    },
-    fromMinute: {
-      type: Number,
-      default: 0
     }
   },
   { _id: false }
 );
 
 /* =========================
-   Гол
+   SUBSTITUTION
+========================= */
+const SubstitutionSchema = new Schema(
+  {
+    minute: {
+      type: Number,
+      required: true
+    },
+
+    playerOut: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
+      required: true
+    },
+
+    playerIn: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
+      required: true
+    }
+  },
+  { _id: false }
+);
+
+/* =========================
+   GOAL
 ========================= */
 const GoalSchema = new Schema(
   {
@@ -35,13 +57,58 @@ const GoalSchema = new Schema(
       ref: "Player",
       required: true
     },
+
     assist: {
       type: Schema.Types.ObjectId,
       ref: "Player",
       default: null
     },
+
     minute: {
       type: Number,
+      required: true
+    },
+
+    ownGoal: {
+      type: Boolean,
+      default: false
+    },
+
+    penalty: {
+      isPenalty: {
+        type: Boolean,
+        default: false
+      },
+
+      earnedBy: {
+        type: Schema.Types.ObjectId,
+        ref: "Player",
+        default: null
+      }
+    }
+  },
+  { _id: false }
+);
+
+/* =========================
+   MISSED PENALTY
+========================= */
+const MissedPenaltySchema = new Schema(
+  {
+    minute: {
+      type: Number,
+      required: true
+    },
+
+    takenBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
+      required: true
+    },
+
+    earnedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
       default: null
     }
   },
@@ -49,7 +116,32 @@ const GoalSchema = new Schema(
 );
 
 /* =========================
-   Матч
+   CARD
+========================= */
+const CardSchema = new Schema(
+  {
+    player: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
+      required: true
+    },
+
+    type: {
+      type: String,
+      enum: ["yellow", "red"],
+      required: true
+    },
+
+    minute: {
+      type: Number,
+      required: true
+    }
+  },
+  { _id: false }
+);
+
+/* =========================
+   MATCH
 ========================= */
 const MatchSchema = new Schema(
   {
@@ -96,7 +188,7 @@ const MatchSchema = new Schema(
     },
 
     /* =========================
-       Составы
+       LINEUPS
     ========================= */
     lineups: {
       home: [LineupPlayerSchema],
@@ -104,31 +196,32 @@ const MatchSchema = new Schema(
     },
 
     /* =========================
-       Замены
+       SUBSTITUTIONS
     ========================= */
-    subsIn: {
-      home: [
-        {
-          player: { type: Schema.Types.ObjectId, ref: "Player" },
-          minute: Number
-        }
-      ],
-      away: [
-        {
-          player: { type: Schema.Types.ObjectId, ref: "Player" },
-          minute: Number
-        }
-      ]
+    substitutions: {
+      home: [SubstitutionSchema],
+      away: [SubstitutionSchema]
     },
 
     /* =========================
-       События
+       EVENTS
     ========================= */
     events: {
       goals: {
         home: [GoalSchema],
         away: [GoalSchema]
       },
+
+      missedPenalties: {
+        home: [MissedPenaltySchema],
+        away: [MissedPenaltySchema]
+      },
+
+      cards: {
+        home: [CardSchema],
+        away: [CardSchema]
+      },
+
       motm: {
         type: Schema.Types.ObjectId,
         ref: "Player",
@@ -140,4 +233,3 @@ const MatchSchema = new Schema(
 );
 
 export default mongoose.model("Match", MatchSchema);
-

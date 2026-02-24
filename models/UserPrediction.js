@@ -14,7 +14,7 @@ const playerPredictionSchema = new Schema(
     },
     position: {
       type: String,
-      enum: ["gk", "def", "mid", "fw"],
+      enum: ["GK", "DEF", "MID", "FW"],
       required: true
     }
   },
