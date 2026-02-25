@@ -49,13 +49,15 @@ const playerSchema = new mongoose.Schema(
 
     starts: { type: Number, default: 0 },
 
-    subs_in: { type: Number, default: 0 },
-
     wins: { type: Number, default: 0 },
 
     draws: { type: Number, default: 0 },
 
     losses: { type: Number, default: 0 },
+
+    subs_in: { type: Number, default: 0 },
+
+    subs_out: { type: Number, default: 0 },
 
     /* ============================
        Attacking
@@ -74,6 +76,8 @@ const playerSchema = new mongoose.Schema(
     cleansheets: { type: Number, default: 0 },
 
     goalsconceded: { type: Number, default: 0 },
+
+    own_goals: { type: Number, default: 0 },
 
     /* ============================
        Penalties
@@ -132,11 +136,17 @@ playerSchema.virtual("rating").get(function () {
   score += (this.goals ?? 0) * 4;
   score += (this.assists ?? 0) * 3;
 
+  /* Own goals */
+  score -= (this.own_goals ?? 0) * 1;
+
   /* Defensive (GK & DEF only) */
   if (this.position === "GK" || this.position === "DEF") {
     score += (this.cleansheets ?? 0) * 4;
     score -= (this.goalsconceded ?? 0) * 1;
   }
+
+  /* GK saves */
+  score += (this.saves ?? 0) * 1;
 
   /* Penalties */
   score += (this.penalty_earned ?? 0) * 3;
@@ -149,9 +159,6 @@ playerSchema.virtual("rating").get(function () {
 
   /* Bonus */
   score += (this.bonus ?? 0) * 3;
-
-  /* Extra defensive stats */
-  score += (this.saves ?? 0) * 1;
 
   return Math.round(score);
 });
