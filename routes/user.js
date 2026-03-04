@@ -1,0 +1,122 @@
+import express from "express";
+import User from "../models/User.js";
+import Match from "../models/Match.js";
+import UserPrediction from "../models/UserPrediction.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+/* =========================
+   SELECT TEAM (ONE TIME)
+========================= */
+
+router.post("/select-team", authMiddleware(), async (req, res) => {
+  try {
+    const { team } = req.body;
+
+    if (!team)
+      return res.status(400).json({ message: "Team is required" });
+
+    const user = await User.findById(req.user.id);
+
+    if (!user)
+      return res.status(404).json({ message: "User not found" });
+
+    if (user.role === "admin")
+      return res.status(403).json({ message: "Admins cannot select team" });
+
+    if (user.selectedTeam)
+      return res.status(400).json({ message: "Team already selected" });
+
+    user.selectedTeam = team;
+    await user.save();
+
+    res.json({
+      message: "Team selected successfully",
+      selectedTeam: user.selectedTeam
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/* =========================
+   GET CURRENT USER DASHBOARD
+========================= */
+
+router.get("/dashboard", authMiddleware(), async (req, res) => {
+  try {
+
+    const user = await User.findById(req.user.id);
+
+    if (!user)
+      return res.status(404).json({ message: "User not found" });
+
+    /* =========================
+       NEXT MATCH FOR USER TEAM
+    ========================= */
+
+    let nextMatch = null;
+    let existingPrediction = null;
+
+    if (user.selectedTeam) {
+
+      const now = new Date();
+
+      nextMatch = await Match.findOne({
+        status: "draft",
+        kickoff: { $gt: now },
+        $or: [
+          { homeTeam: user.selectedTeam },
+          { awayTeam: user.selectedTeam }
+        ]
+      }).sort({ kickoff: 1 });
+
+      if (nextMatch) {
+
+        existingPrediction = await UserPrediction.findOne({
+          user: user._id,
+          match: nextMatch._id
+        });
+
+      }
+    }
+
+    res.json({
+      user: {
+        username: user.username,
+        selectedTeam: user.selectedTeam,
+        totalPoints: user.totalPoints,
+        ratingPosition: user.ratingPosition,
+        lastMatchdayPoints: user.lastMatchdayPoints,
+        lastMatchdayPosition: user.lastMatchdayPosition
+      },
+      nextMatch,
+      existingPrediction
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/* =========================
+   GET RATING TABLE (FOR TEST)
+========================= */
+
+router.get("/rating", authMiddleware(), async (req, res) => {
+  try {
+
+    const users = await User.find({ role: "user" })
+      .sort({ totalPoints: -1 })
+      .select("username totalPoints ratingPosition");
+
+    res.json(users);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+export default router;

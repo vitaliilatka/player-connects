@@ -75,6 +75,12 @@ const userPredictionSchema = new Schema(
       required: true
     },
 
+    matchday: {              // 👈 ДОБАВЛЯЕМ
+      type: Number,
+      required: true,
+      index: true
+    },
+
     team: {
       type: String,
       enum: ["home", "away"],

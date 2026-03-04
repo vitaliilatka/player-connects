@@ -224,6 +224,7 @@ router.post("/:matchId/predict-lineup", authMiddleware(), async (req, res) => {
       {
         user: userId,
         match: matchId,
+        matchday: match.matchday,
         team,
         players: players.map(p => ({
           player: new mongoose.Types.ObjectId(p.playerId),
