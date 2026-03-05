@@ -13,6 +13,8 @@ import leaguesRouter from "./routes/leagues.js";
 import adminMatchesRouter from "./routes/adminMatches.js";
 import adminTeamSquadsRouter from "./routes/adminTeamSquads.js";
 
+import leaderboardRoutes from "./routes/leaderboard.js";
+
 import userRoutes from "./routes/user.js";
 
 
@@ -55,6 +57,7 @@ app.use("/admin/matches", adminMatchesRouter); // новый админ для �
 app.use("/admin", adminTeamSquadsRouter);
 
 app.use("/user", userRoutes);
+app.use("/leaderboard", leaderboardRoutes);
 
 app.use("/matches", matchesRouter);
 

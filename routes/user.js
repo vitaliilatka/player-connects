@@ -101,6 +101,114 @@ router.get("/dashboard", authMiddleware(), async (req, res) => {
   }
 });
 
+
+/* =========================
+   Matchday rating
+========================= */
+
+router.get("/rating/matchday/:matchday", async (req, res) => {
+  try {
+
+    const matchday = Number(req.params.matchday);
+
+    const rating = await UserPrediction.aggregate([
+
+      {
+        $match: { matchday }
+      },
+
+      {
+        $group: {
+          _id: "$user",
+          points: { $sum: "$points" }
+        }
+      },
+
+      {
+        $sort: { points: -1 }
+      }
+
+    ]);
+
+    const users = await User.find({
+      _id: { $in: rating.map(r => r._id) }
+    });
+
+    const result = rating.map((r, index) => {
+
+      const user = users.find(u => u._id.toString() === r._id.toString());
+
+      return {
+        username: user?.username,
+        points: r.points,
+        position: index + 1
+      };
+
+    });
+
+    res.json(result);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+/* =========================
+   Team Tating
+========================= */
+
+router.get("/rating/team/:team", async (req, res) => {
+
+  try {
+
+    const team = req.params.team;
+
+    const users = await User.find({ selectedTeam: team });
+
+    const ids = users.map(u => u._id);
+
+    const rating = await UserPrediction.aggregate([
+
+      {
+        $match: { user: { $in: ids } }
+      },
+
+      {
+        $group: {
+          _id: "$user",
+          totalPoints: { $sum: "$points" }
+        }
+      },
+
+      {
+        $sort: { totalPoints: -1 }
+      }
+
+    ]);
+
+    const result = rating.map((r, index) => {
+
+      const user = users.find(u => u._id.toString() === r._id.toString());
+
+      return {
+        username: user?.username,
+        totalPoints: r.totalPoints,
+        position: index + 1
+      };
+
+    });
+
+    res.json(result);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+
+});
+
+
+
 /* =========================
    GET RATING TABLE (FOR TEST)
 ========================= */
