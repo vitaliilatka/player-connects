@@ -6,6 +6,8 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 import { processMatch } from "../services/matchProcessor.js";
 import { updateRating } from "../services/ratingProcessor.js";
 
+import { processMatchdayWinner } from "../services/matchdayProcessor.js";
+
 const router = express.Router();
 
 /* =========================
@@ -318,14 +320,23 @@ router.post("/:id/result", authMiddleware("admin"), async (req, res) => {
 
     await match.save();
     await processMatch(match);
-
     await updateRating();
+    await processMatchdayWinner(match.matchday);
+
 
     res.json({ message: "Match result saved" });
 
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  }  catch (err) {
+      console.error(err);
+      res.status(500).json({
+        message: err.message,
+        stack: err.stack
+      });
+    }
+
+  // } catch (err) {
+  //   res.status(500).json({ message: err.message });
+  // }
 });
 
 export default router;

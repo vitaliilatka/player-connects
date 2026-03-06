@@ -4,6 +4,8 @@ import Match from "../models/Match.js";
 import UserPrediction from "../models/UserPrediction.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
+import MatchdayWinner from "../models/MatchdayWinner.js";
+
 const router = express.Router();
 
 /* =========================
@@ -155,7 +157,7 @@ router.get("/rating/matchday/:matchday", async (req, res) => {
 
 
 /* =========================
-   Team Tating
+   Team Rating
 ========================= */
 
 router.get("/rating/team/:team", async (req, res) => {
@@ -207,6 +209,27 @@ router.get("/rating/team/:team", async (req, res) => {
 
 });
 
+/* =========================
+   Matchday Winner
+========================= */
+
+router.get("/matchday/winner/:matchday", async (req, res) => {
+
+  const winner = await MatchdayWinner
+    .findOne({ matchday: req.params.matchday })
+    .populate("user", "username");
+
+  if (!winner) {
+    return res.json({ message: "Winner not calculated yet" });
+  }
+
+  res.json({
+    matchday: winner.matchday,
+    username: winner.user.username,
+    points: winner.points
+  });
+
+});
 
 
 /* =========================

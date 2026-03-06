@@ -1,27 +1,29 @@
-// services/matchProcessor.js
 import Match from "../models/Match.js";
 import UserPrediction from "../models/UserPrediction.js";
 
-export const processMatch = async (match) => {
-  if (match.processed) return;
+export const processMatch = async (matchId) => {
+
+  const match = await Match.findById(matchId);
+
+  if (!match || match.processed) return;
 
   const predictions = await UserPrediction.find({
     match: match._id
   });
 
   for (const prediction of predictions) {
-    let points = 0;
 
-    /* =========================
-       SCORE POINTS
-    ========================= */
+    let totalPoints = 0;
+
+    /* SCORE */
 
     if (
       prediction.predictedScore.home === match.score.home &&
       prediction.predictedScore.away === match.score.away
     ) {
-      points += 3;
+      totalPoints += 3;
     } else {
+
       const predictedDiff =
         prediction.predictedScore.home -
         prediction.predictedScore.away;
@@ -35,15 +37,23 @@ export const processMatch = async (match) => {
         (predictedDiff < 0 && realDiff < 0) ||
         (predictedDiff === 0 && realDiff === 0)
       ) {
-        points += 1;
+        totalPoints += 1;
       }
+
     }
 
-    prediction.points = points;
+    /* TODO later:
+       lineup points
+       subs points
+       goals points
+       motm points
+    */
+
+    prediction.points = totalPoints;
+
     await prediction.save();
   }
 
   match.processed = true;
   await match.save();
 };
-
