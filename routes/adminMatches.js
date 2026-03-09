@@ -319,7 +319,7 @@ router.post("/:id/result", authMiddleware("admin"), async (req, res) => {
     match.status = "finished";
 
     await match.save();
-    await processMatch(match);
+    await processMatch(match._id);
     await updateRating();
     await processMatchdayWinner(match.matchday);
 

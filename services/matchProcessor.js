@@ -1,59 +1,51 @@
 import Match from "../models/Match.js";
 import UserPrediction from "../models/UserPrediction.js";
+import { calculatePoints } from "./pointsCalculator.js";
 
 export const processMatch = async (matchId) => {
 
+  console.log("Processing match:", matchId);
+
   const match = await Match.findById(matchId);
 
-  if (!match || match.processed) return;
+  if (!match) {
+    console.log("Match not found");
+    return;
+  }
+
+  if (match.status !== "finished") {
+    console.log("Match not finished yet");
+    return;
+  }
 
   const predictions = await UserPrediction.find({
     match: match._id
   });
 
+  console.log("Predictions found:", predictions.length);
+
   for (const prediction of predictions) {
 
-    let totalPoints = 0;
+    const result = calculatePoints(prediction, match);
 
-    /* SCORE */
+    console.log(
+      "User:",
+      prediction.user,
+      "points:",
+      result.totalPoints
+    );
 
-    if (
-      prediction.predictedScore.home === match.score.home &&
-      prediction.predictedScore.away === match.score.away
-    ) {
-      totalPoints += 3;
-    } else {
-
-      const predictedDiff =
-        prediction.predictedScore.home -
-        prediction.predictedScore.away;
-
-      const realDiff =
-        match.score.home -
-        match.score.away;
-
-      if (
-        (predictedDiff > 0 && realDiff > 0) ||
-        (predictedDiff < 0 && realDiff < 0) ||
-        (predictedDiff === 0 && realDiff === 0)
-      ) {
-        totalPoints += 1;
-      }
-
-    }
-
-    /* TODO later:
-       lineup points
-       subs points
-       goals points
-       motm points
-    */
-
-    prediction.points = totalPoints;
+    prediction.points = result.totalPoints;
 
     await prediction.save();
+
   }
 
   match.processed = true;
+
   await match.save();
+
+  console.log("Match processed successfully");
+
 };
+

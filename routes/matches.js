@@ -278,12 +278,12 @@ router.get("/:matchId/predictions", async (req, res) => {
   }
 });
 
-
 /* =========================
-   COMPARE (ADVANCED VERSION)
+   COMPARE RESULTS
 ========================= */
 router.get("/:matchId/compare", async (req, res) => {
   try {
+
     const match = await Match.findById(req.params.matchId);
 
     if (!match)
@@ -294,248 +294,25 @@ router.get("/:matchId/compare", async (req, res) => {
 
     const predictions = await UserPrediction.find({
       match: match._id
-    }).populate("user", "username");
+    })
+      .populate("user", "username");
 
-    const results = [];
+    if (!predictions.length)
+      return res.json({ message: "No predictions for this match" });
 
-    for (const pred of predictions) {
+    const results = predictions.map(pred => ({
+      user: pred.user.username,
+      points: pred.points
+    }));
 
-      let totalPoints = 0;
-
-      /* =========================
-         HELPER: PLAYER ACTIVE CHECK
-      ========================= */
-
-      const getPlayerInterval = (playerId) => {
-
-        const startMinute = 0;
-        const endMinute = 120;
-
-        const subOut = match.substitutions?.[pred.team]?.find(
-          s => s.playerOut?.toString() === playerId.toString()
-        );
-
-        const subIn = match.substitutions?.[pred.team]?.find(
-          s => s.playerIn?.toString() === playerId.toString()
-        );
-
-        let from = startMinute;
-        let to = endMinute;
-
-        if (subIn) from = subIn.minute;
-        if (subOut) to = subOut.minute;
-
-        return { from, to };
-      };
-
-      const isActiveAtMinute = (playerId, minute) => {
-        const { from, to } = getPlayerInterval(playerId);
-        return minute >= from && minute <= to;
-      };
-
-      /* =========================
-         LINEUP
-      ========================= */
-
-      const actualLineup = match.lineups?.[pred.team] || [];
-      const predictedLineup = pred.players || [];
-
-      let lineupCorrect = 0;
-
-      predictedLineup.forEach(pp => {
-        if (
-          actualLineup.some(
-            ap => ap.player.toString() === pp.player.toString()
-          )
-        ) lineupCorrect++;
-      });
-
-      let lineupBonus = lineupCorrect === 11 ? 3 : 0;
-      let lineupPoints = lineupCorrect + lineupBonus;
-      totalPoints += lineupPoints;
-
-      /* =========================
-         SUBSTITUTIONS
-      ========================= */
-
-      const actualSubs = match.substitutions?.[pred.team] || [];
-      const predictedSubs = pred.subs || [];
-
-      let subsCorrect = 0;
-
-      predictedSubs.forEach(ps => {
-        if (
-          actualSubs.some(
-            as => as.playerIn.toString() === ps.player.toString()
-          )
-        ) subsCorrect++;
-      });
-
-      let subsBonus = 0;
-
-      if (
-        predictedSubs.length === actualSubs.length &&
-        subsCorrect === actualSubs.length &&
-        actualSubs.length > 0
-      ) {
-        subsBonus = 3;
-      }
-
-      let subsPoints = subsCorrect + subsBonus;
-      totalPoints += subsPoints;
-
-      /* =========================
-         GOALS + CONNECTS + MINUTES
-      ========================= */
-
-      const actualGoals = match.events?.goals?.[pred.team] || [];
-      const predictedGoals = pred.goals || [];
-
-      let scorerPoints = 0;
-      let assistPoints = 0;
-      let playerConnectBonus = 0;
-
-      const usedActualGoals = new Set();
-
-      predictedGoals.forEach(pg => {
-
-        actualGoals.forEach((ag, index) => {
-
-          if (usedActualGoals.has(index)) return;
-
-          if (
-            ag.scorer.toString() === pg.scorer.toString()
-          ) {
-
-            // Проверяем активность игрока
-            if (!isActiveAtMinute(ag.scorer, ag.minute)) return;
-
-            scorerPoints += 3;
-
-            // ASSIST
-            if (
-              ag.assist &&
-              pg.assist &&
-              ag.assist.toString() === pg.assist.toString() &&
-              isActiveAtMinute(ag.assist, ag.minute)
-            ) {
-              assistPoints += 3;
-              playerConnectBonus += 3;
-            }
-
-            // PENALTY SELF CONNECT (earnedBy === takenBy)
-            if (
-              ag.penalty &&
-              ag.penalty.earnedBy &&
-              ag.penalty.takenBy &&
-              ag.penalty.earnedBy.toString() ===
-              ag.penalty.takenBy.toString() &&
-              pg.scorer.toString() === ag.penalty.takenBy.toString()
-            ) {
-              playerConnectBonus += 3;
-            }
-
-            usedActualGoals.add(index);
-          }
-
-        });
-
-      });
-
-      let goalsPoints =
-        scorerPoints + assistPoints + playerConnectBonus;
-
-      totalPoints += goalsPoints;
-
-      /* =========================
-         SCORE
-      ========================= */
-
-      let scorePoints = 0;
-      let exactScore = false;
-      let homeGoalsCorrect = false;
-      let awayGoalsCorrect = false;
-
-      if (
-        pred.predictedScore.home === match.score.home &&
-        pred.predictedScore.away === match.score.away
-      ) {
-        scorePoints = 3;
-        exactScore = true;
-      } else {
-
-        if (pred.predictedScore.home === match.score.home) {
-          scorePoints += 2;
-          homeGoalsCorrect = true;
-        }
-
-        if (pred.predictedScore.away === match.score.away) {
-          scorePoints += 2;
-          awayGoalsCorrect = true;
-        }
-      }
-
-      totalPoints += scorePoints;
-
-      /* =========================
-         MOTM
-      ========================= */
-
-      let motmPoints = 0;
-      let motmCorrect = false;
-
-      if (
-        match.events?.motm &&
-        pred.motm &&
-        match.events.motm.toString() === pred.motm.toString()
-      ) {
-        motmPoints = 3;
-        motmCorrect = true;
-        totalPoints += 3;
-      }
-
-      /* =========================
-         SAVE
-      ========================= */
-
-      pred.points = totalPoints;
-      await pred.save();
-
-      results.push({
-        user: pred.user,
-        totalPoints,
-        breakdown: {
-          lineup: {
-            correct: lineupCorrect,
-            bonus: lineupBonus,
-            points: lineupPoints
-          },
-          substitutions: {
-            correct: subsCorrect,
-            bonus: subsBonus,
-            points: subsPoints
-          },
-          goals: {
-            scorerPoints,
-            assistPoints,
-            playerConnectBonus,
-            points: goalsPoints
-          },
-          score: {
-            exactScore,
-            homeGoalsCorrect,
-            awayGoalsCorrect,
-            points: scorePoints
-          },
-          motm: {
-            correct: motmCorrect,
-            points: motmPoints
-          }
-        }
-      });
-    }
-
-    res.json(results);
+    res.json({
+      match: {
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        score: match.score
+      },
+      leaderboard: results.sort((a, b) => b.points - a.points)
+    });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -543,4 +320,3 @@ router.get("/:matchId/compare", async (req, res) => {
 });
 
 export default router;
-
