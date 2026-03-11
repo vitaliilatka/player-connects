@@ -19,19 +19,8 @@ min-height:100vh;
 
 .topbar{
 display:flex;
-justify-content:flex-end;
-gap:20px;
+justify-content:space-between;
 margin-bottom:20px;
-}
-
-.card{
-border-radius:16px;
-box-shadow:0 10px 20px rgba(0,0,0,0.08);
-}
-
-.section-title{
-font-weight:600;
-margin-bottom:10px;
 }
 
 .pitch{
@@ -78,25 +67,27 @@ background:#eee;
 
 <body class="container py-4">
 
-<h2 class="text-center mb-4">User Dashboard</h2>
-
 <div class="topbar">
 
-<div id="userInfo"></div>
+<h3>⚽ Fantasy Dashboard</h3>
 
-<button id="logoutBtn" class="btn btn-outline-danger btn-sm">
+<div>
+
+<span id="userInfo"></span>
+
+<button id="logoutBtn" class="btn btn-sm btn-outline-danger">
 Logout
 </button>
 
 </div>
 
+</div>
 
 
-<!-- NEXT MATCH -->
 
-<div class="card p-3 mb-4">
+<div class="card p-3 mb-3">
 
-<h5 class="section-title">Next Game</h5>
+<h5>Next Match</h5>
 
 <div id="nextMatchInfo"></div>
 
@@ -105,8 +96,6 @@ Logout
 
 
 <div class="row">
-
-<!-- PLAYER LIST -->
 
 <div class="col-md-3">
 
@@ -122,13 +111,11 @@ Logout
 
 
 
-<!-- PITCH -->
-
 <div class="col-md-6">
 
 <div class="card p-3">
 
-<h6 class="section-title">Predict Lineup</h6>
+<h6>Predict Lineup</h6>
 
 <div class="pitch" id="pitch"></div>
 
@@ -136,39 +123,38 @@ Logout
 
 <div class="subs" id="subs"></div>
 
-</div>
+<button class="btn btn-success mt-3 w-100" onclick="submitLineup()">
+Submit Lineup Prediction
+</button>
 
 </div>
 
+</div>
 
 
-<!-- RESULT PREDICT -->
 
 <div class="col-md-3">
 
 <div class="card p-3">
 
-<h6 class="section-title">Result Predict</h6>
+<h6>Result Predict</h6>
 
-<div class="mb-2">
+<input id="homeScore" class="form-control mb-2" placeholder="Home goals">
+<input id="awayScore" class="form-control mb-2" placeholder="Away goals">
 
-<input id="homeScore" class="form-control" placeholder="Home goals">
-
-</div>
-
-<div class="mb-2">
-
-<input id="awayScore" class="form-control" placeholder="Away goals">
-
-</div>
-
-<button class="btn btn-primary w-100" onclick="buildGoalInputs()">
+<button class="btn btn-primary w-100 mb-3" onclick="generateGoals()">
 Generate Goals
 </button>
 
-<hr>
-
 <div id="goalInputs"></div>
+
+<h6 class="mt-3">Man Of The Match</h6>
+
+<select id="motm" class="form-select"></select>
+
+<button class="btn btn-success w-100 mt-3" onclick="submitResult()">
+Submit Result Prediction
+</button>
 
 </div>
 
@@ -180,66 +166,48 @@ Generate Goals
 
 <script>
 
-let token=localStorage.getItem("token");
+const token=localStorage.getItem("token");
 
-let selectedPlayer=null;
+if(!token){
+window.location.replace("/index.html");
+}
 
 let squad=[];
+let selectedPlayer=null;
 
 let lineup=new Array(11).fill(null);
-
 let subs=new Array(5).fill(null);
 
 let currentMatch=null;
 
 
 
-/* DASHBOARD LOAD */
-
 async function loadDashboard(){
 
-if(!token){
-
-window.location.href="/";
-
-return;
-
-}
-
 const res=await fetch("/user/dashboard",{
-
 headers:{Authorization:"Bearer "+token}
-
 });
 
 const data=await res.json();
 
 document.getElementById("userInfo").innerText=
-
 data.user.username+" | Team: "+(data.user.selectedTeam||"not selected");
 
 currentMatch=data.nextMatch;
 
 if(!currentMatch){
-
 document.getElementById("nextMatchInfo").innerHTML="No upcoming match";
-
 return;
-
 }
 
 const kickoff=new Date(currentMatch.kickoff);
-
 const deadline=new Date(kickoff.getTime()-90*60*1000);
 
 document.getElementById("nextMatchInfo").innerHTML=`
 
 <div>Matchday ${currentMatch.matchday}</div>
-
 <div>${kickoff.toLocaleString()}</div>
-
 <div>Deadline: ${deadline.toLocaleString()}</div>
-
 <div><strong>${currentMatch.homeTeam} vs ${currentMatch.awayTeam}</strong></div>
 
 `;
@@ -247,7 +215,6 @@ document.getElementById("nextMatchInfo").innerHTML=`
 loadSquad(data.user.selectedTeam);
 
 buildPitch();
-
 buildSubs();
 
 }
@@ -258,17 +225,40 @@ buildSubs();
 
 async function loadSquad(team){
 
-const res=await fetch("/players/team/"+team);
+try{
 
-squad=await res.json();
+const res = await fetch("/admin/public/teamsquads/"+team,{
+headers:{ Authorization:"Bearer "+token }
+});
+
+if(!res.ok){
+throw new Error("Squad request failed");
+}
+
+const data=await res.json();
+
+console.log("Squad response:",data);
+
+squad=data.players || data.squad || [];
+
+if(!squad.length){
+document.getElementById("playerList").innerHTML="No players found";
+return;
+}
 
 renderPlayers();
+renderMotm();
+
+}catch(err){
+
+console.error(err);
+document.getElementById("playerList").innerHTML="Error loading squad";
+
+}
 
 }
 
 
-
-/* PLAYER LIST */
 
 function renderPlayers(){
 
@@ -284,11 +274,7 @@ div.className="player-item";
 
 div.innerText=p.name;
 
-div.onclick=()=>{
-
-selectedPlayer=p;
-
-};
+div.onclick=()=>selectedPlayer=p;
 
 list.appendChild(div);
 
@@ -298,7 +284,17 @@ list.appendChild(div);
 
 
 
-/* BUILD PITCH */
+function renderMotm(){
+
+const select=document.getElementById("motm");
+
+select.innerHTML=squad.map(p=>
+`<option value="${p._id}">${p.name}</option>`
+).join("");
+
+}
+
+
 
 function buildPitch(){
 
@@ -317,11 +313,8 @@ slot.innerText=lineup[i]?.name||"empty";
 slot.onclick=()=>{
 
 if(selectedPlayer){
-
 lineup[i]=selectedPlayer;
-
 buildPitch();
-
 }
 
 };
@@ -334,13 +327,11 @@ pitch.appendChild(slot);
 
 
 
-/* BUILD SUBS */
-
 function buildSubs(){
 
-const s=document.getElementById("subs");
+const container=document.getElementById("subs");
 
-s.innerHTML="";
+container.innerHTML="";
 
 for(let i=0;i<5;i++){
 
@@ -353,16 +344,13 @@ slot.innerText=subs[i]?.name||"empty";
 slot.onclick=()=>{
 
 if(selectedPlayer){
-
 subs[i]=selectedPlayer;
-
 buildSubs();
-
 }
 
 };
 
-s.appendChild(slot);
+container.appendChild(slot);
 
 }
 
@@ -370,11 +358,9 @@ s.appendChild(slot);
 
 
 
-/* GOAL INPUTS */
+function generateGoals(){
 
-function buildGoalInputs(){
-
-const home=parseInt(document.getElementById("homeScore").value||0);
+const home=parseInt(homeScore.value||0);
 
 const container=document.getElementById("goalInputs");
 
@@ -384,9 +370,9 @@ for(let i=0;i<home;i++){
 
 container.innerHTML+=`
 
-<div class="mb-2">
+<div class="border p-2 mb-2">
 
-Goal ${i+1}
+<b>Goal ${i+1}</b>
 
 <select class="form-select mb-1">
 
@@ -394,9 +380,17 @@ ${squad.map(p=>`<option value="${p._id}">${p.name}</option>`).join("")}
 
 </select>
 
-<input class="form-control mb-1" placeholder="Assist player">
+<select class="form-select mb-1">
 
-<label><input type="checkbox"> Penalty</label>
+<option>Assist</option>
+
+${squad.map(p=>`<option value="${p._id}">${p.name}</option>`).join("")}
+
+</select>
+
+<label><input type="checkbox"> Is penalty</label>
+
+<label><input type="checkbox"> Penalty earned</label>
 
 </div>
 
@@ -408,13 +402,66 @@ ${squad.map(p=>`<option value="${p._id}">${p.name}</option>`).join("")}
 
 
 
+async function submitLineup(){
+
+await fetch(`/matches/${currentMatch._id}/predict-lineup`,{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
+},
+
+body:JSON.stringify({
+
+lineup:lineup.map(p=>p?._id),
+subs:subs.map(p=>p?._id)
+
+})
+
+});
+
+alert("Lineup saved");
+
+}
+
+
+
+async function submitResult(){
+
+await fetch(`/matches/${currentMatch._id}/predict-result`,{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
+},
+
+body:JSON.stringify({
+
+homeScore:homeScore.value,
+awayScore:awayScore.value,
+motm:document.getElementById("motm").value
+
+})
+
+});
+
+alert("Result saved");
+
+}
+
+
+
 /* LOGOUT */
 
 document.getElementById("logoutBtn").onclick=()=>{
 
-localStorage.removeItem("token");
+localStorage.clear();
 
-window.location.href="/";
+window.location.replace("/index.html");
 
 };
 
@@ -427,4 +474,3 @@ loadDashboard();
 </body>
 
 </html>
-

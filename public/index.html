@@ -193,11 +193,26 @@
 
 
   <script>
+    // const role = localStorage.getItem("role");
+    // if (role === "admin") {
+    //   window.location.href = "/admin.html";
+    // } else if (role === "user") {
+    //   window.location.href = "/user.html";
+    // }
+
+    const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
+
+    if(token){
+
     if (role === "admin") {
-      window.location.href = "/admin.html";
-    } else if (role === "user") {
-      window.location.href = "/user.html";
+    window.location.href = "/admin.html";
+    }
+
+    if (role === "user") {
+    window.location.href = "/user.html";
+    }
+
     }
 
     document.getElementById("loginForm").addEventListener("submit", async (e) => {

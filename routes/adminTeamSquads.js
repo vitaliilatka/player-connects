@@ -50,6 +50,24 @@ router.get(
 );
 
 /**
+ * GET /public/teamsquads/:team
+ * Получить состав конкретной команды пользователю
+ */
+
+router.get("/public/teamsquads/:team", async (req,res)=>{
+
+const squad = await TeamSquad.findOne({team:req.params.team})
+.populate("players","name rating");
+
+if(!squad){
+return res.status(404).json({message:"Team squad not found"});
+}
+
+res.json(squad);
+
+});
+
+/**
  * POST /admin/teamsquads
  * Создать новый TeamSquad
  * body: { team: "Liverpool", season?: "2025/26" }
