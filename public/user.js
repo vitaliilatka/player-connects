@@ -1,135 +1,317 @@
 const token = localStorage.getItem("token");
 
+console.log("USER JS LOADED");
+
 if (!token) {
   window.location.href = "/index.html";
 }
 
-async function init() {
+let squad = [];
+let selectedPlayer = null;
 
-  await loadUser();
-  await loadDashboard();
-  await loadLeaderboard();
+let lineup = new Array(11).fill(null);
+let subs = new Array(5).fill(null);
 
-}
+let currentMatch = null;
 
-async function loadUser() {
+/* =======================
+LOAD DASHBOARD
+======================= */
 
-  const res = await fetch("/auth/me", {
-    headers:{ Authorization:`Bearer ${token}` }
+async function loadDashboard() {
+
+  console.log("Loading dashboard...");
+
+  const res = await fetch("/user/dashboard", {
+    headers: { Authorization: "Bearer " + token }
   });
 
-  if(!res.ok){
+  if (res.status === 401) {
     localStorage.clear();
-    window.location.href="/index.html";
-  }
-
-  const user = await res.json();
-
-  document.getElementById("welcomeUser").innerText =
-  `👤 ${user.username} | Team: ${user.team ?? "not selected"}`;
-
-}
-
-async function loadDashboard(){
-
-  const res = await fetch("/user/dashboard",{
-    headers:{ Authorization:`Bearer ${token}` }
-  });
-
-  const data = await res.json();
-
-  const match = data.nextMatch;
-  const prediction = data.existingPrediction;
-
-  if(!match){
-    document.getElementById("nextMatch").innerHTML =
-      "No upcoming matches";
+    window.location.href = "/index.html";
     return;
   }
 
-  let predictionInfo = "";
+  const data = await res.json();
 
-  if(prediction && prediction.predictedScore){
-    predictionInfo = `
-      <div class="alert alert-success mt-2">
-        Your prediction: 
-        <strong>
-          ${prediction.predictedScore.home} :
-          ${prediction.predictedScore.away}
-        </strong>
-      </div>
+  console.log("Dashboard data:", data);
+
+  document.getElementById("userInfo").innerText =
+    data.user.username + " | Team: " + (data.user.selectedTeam || "not selected");
+
+  currentMatch = data.nextMatch;
+
+  if (!currentMatch) {
+    document.getElementById("nextMatchInfo").innerHTML = "No upcoming match";
+  } else {
+
+    const kickoff = new Date(currentMatch.kickoff);
+    const deadline = new Date(kickoff.getTime() - 90 * 60 * 1000);
+
+    document.getElementById("nextMatchInfo").innerHTML = `
+      <div>Matchday ${currentMatch.matchday}</div>
+      <div>${kickoff.toLocaleString()}</div>
+      <div>Deadline: ${deadline.toLocaleString()}</div>
+      <div><strong>${currentMatch.homeTeam} vs ${currentMatch.awayTeam}</strong></div>
     `;
+
   }
 
-  document.getElementById("nextMatch").innerHTML = `
-  
-  <p><strong>${match.homeTeam} vs ${match.awayTeam}</strong></p>
+  if (!data.user.selectedTeam) {
+    console.log("User has no team selected");
+    return;
+  }
 
-  <input id="homeScore" type="number" class="form-control mb-2" placeholder="Home score">
+  console.log("Loading squad for:", data.user.selectedTeam);
 
-  <input id="awayScore" type="number" class="form-control mb-2" placeholder="Away score">
+  await loadSquad(data.user.selectedTeam);
 
-  <button class="btn btn-primary" onclick="submitPrediction('${match._id}')">
-    Submit prediction
-  </button>
+  buildPitch();
+  buildSubs();
+}
 
-  ${predictionInfo}
 
-  `;
+/* =======================
+LOAD SQUAD
+======================= */
+
+async function loadSquad(team) {
+
+  console.log("Requesting squad:", team);
+
+  const res = await fetch("/user/squad/" + team, {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  console.log("Squad response status:", res.status);
+
+
+
+  if (res.status === 401) {
+    localStorage.clear();
+    window.location.href = "/index.html";
+    return;
+  }
+
+  const data = await res.json();
+
+  console.log("Squad data:", data);
+
+  squad = data.players;
+
+  renderPlayers();
+  renderMotm();
+}
+
+/* =======================
+RENDER PLAYERS
+======================= */
+
+function renderPlayers() {
+
+  const list = document.getElementById("playerList");
+  list.innerHTML = "";
+
+  squad.forEach(p => {
+
+    const div = document.createElement("div");
+
+    div.className = "player-item";
+    div.innerText = p.name;
+
+    div.onclick = () => {
+      selectedPlayer = p;
+    };
+
+    list.appendChild(div);
+
+  });
 
 }
 
-async function submitPrediction(matchId){
+/* =======================
+RENDER MOTM
+======================= */
 
-  const homeScore = document.getElementById("homeScore").value;
-  const awayScore = document.getElementById("awayScore").value;
+function renderMotm() {
 
-  await fetch(`/matches/${matchId}/predict`,{
+  const select = document.getElementById("motm");
 
-    method:"POST",
+  select.innerHTML = squad.map(p =>
+    `<option value="${p._id}">${p.name}</option>`
+  ).join("");
 
-    headers:{
-      "Content-Type":"application/json",
-      Authorization:`Bearer ${token}`
+}
+
+/* =======================
+BUILD LINEUP
+======================= */
+
+function buildPitch() {
+
+  const pitch = document.getElementById("pitch");
+  pitch.innerHTML = "";
+
+  for (let i = 0; i < 11; i++) {
+
+    const slot = document.createElement("div");
+
+    slot.className = "player-slot";
+    slot.innerText = lineup[i]?.name || "empty";
+
+    slot.onclick = () => {
+
+      if (selectedPlayer) {
+        lineup[i] = selectedPlayer;
+        buildPitch();
+      }
+
+    };
+
+    pitch.appendChild(slot);
+
+  }
+
+}
+
+/* =======================
+BUILD SUBS
+======================= */
+
+function buildSubs() {
+
+  const container = document.getElementById("subs");
+  container.innerHTML = "";
+
+  for (let i = 0; i < 5; i++) {
+
+    const slot = document.createElement("div");
+
+    slot.className = "player-slot";
+    slot.innerText = subs[i]?.name || "empty";
+
+    slot.onclick = () => {
+
+      if (selectedPlayer) {
+        subs[i] = selectedPlayer;
+        buildSubs();
+      }
+
+    };
+
+    container.appendChild(slot);
+
+  }
+
+}
+
+/* =======================
+GENERATE GOALS
+======================= */
+
+function generateGoals() {
+
+  const home = parseInt(homeScore.value || 0);
+  const container = document.getElementById("goalInputs");
+
+  container.innerHTML = "";
+
+  for (let i = 0; i < home; i++) {
+
+    container.innerHTML += `
+
+<div class="border p-2 mb-2">
+
+<b>Goal ${i + 1}</b>
+
+<select class="form-select mb-1">
+${squad.map(p => `<option value="${p._id}">${p.name}</option>`).join("")}
+</select>
+
+<select class="form-select mb-1">
+<option>Assist</option>
+${squad.map(p => `<option value="${p._id}">${p.name}</option>`).join("")}
+</select>
+
+<label><input type="checkbox"> Is penalty</label>
+
+<label><input type="checkbox"> Penalty earned</label>
+
+</div>
+
+`;
+
+  }
+
+}
+
+/* =======================
+SUBMIT LINEUP
+======================= */
+
+async function submitLineup() {
+
+  await fetch(`/matches/${currentMatch._id}/predict-lineup`, {
+
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
     },
 
-    body:JSON.stringify({
-      homeScore,
-      awayScore
+    body: JSON.stringify({
+      lineup: lineup.map(p => p?._id),
+      subs: subs.map(p => p?._id)
     })
 
   });
 
-  alert("Prediction saved");
+  alert("Lineup saved");
 
 }
 
-async function loadLeaderboard(){
+/* =======================
+SUBMIT RESULT
+======================= */
 
-  const res = await fetch("/leaderboard");
-  const users = await res.json();
+async function submitResult() {
 
-  let html = "";
+  await fetch(`/matches/${currentMatch._id}/predict-result`, {
 
-  users.forEach((u)=>{
+    method: "POST",
 
-    html += `
-      <div>
-        ${u.position}. ${u.username} — ${u.points} pts
-      </div>
-    `;
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
+    },
+
+    body: JSON.stringify({
+      homeScore: homeScore.value,
+      awayScore: awayScore.value,
+      motm: document.getElementById("motm").value
+    })
 
   });
 
-  document.getElementById("leaderboard").innerHTML = html;
+  alert("Result saved");
 
 }
 
+/* =======================
+LOGOUT
+======================= */
 
-document.getElementById("logoutBtn").onclick=()=>{
-localStorage.clear();
-window.location.href="/index.html";
-}
+document.getElementById("logoutBtn").onclick = () => {
 
-init();
+  localStorage.removeItem("token");
+  window.location.href = "/index.html";
+
+};
+
+/* =======================
+START
+======================= */
+
+loadDashboard();
 

@@ -5,6 +5,7 @@ import UserPrediction from "../models/UserPrediction.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
 import MatchdayWinner from "../models/MatchdayWinner.js";
+import TeamSquad from "../models/TeamSquad.js";
 
 const router = express.Router();
 
@@ -42,6 +43,33 @@ router.post("/select-team", authMiddleware(), async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+
+/* =========================
+   GET CURRENT USER TEAMSQUAD
+========================= */
+
+router.get("/squad/:team", authMiddleware("user"), async (req, res) => {
+  
+  console.log("TEAM REQUESTED:", req.params.team)
+
+try{
+
+const squad = await TeamSquad.findOne({team:req.params.team})
+.populate("players","name rating");
+
+if(!squad){
+return res.status(404).json({message:"Squad not found"});
+}
+
+res.json(squad);
+
+}catch(err){
+res.status(500).json({message:err.message});
+}
+
+});
+
 
 /* =========================
    GET CURRENT USER DASHBOARD
