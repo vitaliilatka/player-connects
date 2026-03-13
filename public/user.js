@@ -231,10 +231,13 @@ div.appendChild(slot);
 GOALS
 ========================= */
 
+/* =========================
+GOALS
+========================= */
+
 function generateGoals(){
 
 let home=parseInt(homeScore.value||0);
-
 let away=parseInt(awayScore.value||0);
 
 if(home>15||away>15){
@@ -242,46 +245,140 @@ alert("Max goals = 15");
 return;
 }
 
-let html="";
+goalInputs.innerHTML="";
 
 for(let i=0;i<home;i++){
 
-html+=`
-<div class="border p-2 mb-2">
+const block=document.createElement("div");
+block.className="border p-2 mb-2 goal-block";
 
-Goal ${i+1}<br>
+block.innerHTML=`
+<div><b>Goal ${i+1}</b></div>
 
+<div>
 Scorer:
-<button onclick="goalPick(this)">select</button><br>
+<button class="btn btn-sm btn-outline-primary scorer-btn">
+select
+</button>
+</div>
 
+<div>
 Assist:
-<button onclick="goalPick(this)" class="assistBtn">select</button>
+<button class="btn btn-sm btn-outline-secondary assist-btn">
+select
+</button>
+</div>
 
+<div class="mt-1">
+<label>
+<input type="checkbox" class="penalty-checkbox">
+ penalty
+</label>
+</div>
+
+<div class="penalty-earned-wrapper mt-1" style="display:none;">
+Penalty earned:
+<button class="btn btn-sm btn-outline-warning earned-btn">
+select
+</button>
 </div>
 `;
 
-}
-
-goalInputs.innerHTML=html;
+goalInputs.appendChild(block);
 
 }
 
-function goalPick(btn){
+/* attach listeners */
 
-const players = getActivePlayers();
+document.querySelectorAll(".goal-block").forEach(block=>{
 
-if(players.length===0){
-alert("Select lineup first");
+const scorerBtn=block.querySelector(".scorer-btn");
+const assistBtn=block.querySelector(".assist-btn");
+const penaltyBox=block.querySelector(".penalty-checkbox");
+const earnedWrapper=block.querySelector(".penalty-earned-wrapper");
+const earnedBtn=block.querySelector(".earned-btn");
+
+/* scorer */
+
+scorerBtn.addEventListener("click",()=>{
+
+const players=getActivePlayers();
+
+pickPlayer(player=>{
+
+scorerBtn.innerText=player.name;
+scorerBtn.dataset.id=player._id;
+
+/* если ассист = тот же игрок → сброс */
+
+if(assistBtn.dataset.id===player._id){
+assistBtn.innerText="select";
+assistBtn.dataset.id="";
+}
+
+},players);
+
+});
+
+/* assist */
+
+assistBtn.addEventListener("click",()=>{
+
+const players=getActivePlayers();
+
+pickPlayer(player=>{
+
+if(player._id===scorerBtn.dataset.id){
+alert("Scorer cannot assist himself");
 return;
 }
 
-pickPlayer(p=>{
-
-btn.innerText=p.name;
-
-btn.dataset.id=p._id;
+assistBtn.innerText=player.name;
+assistBtn.dataset.id=player._id;
 
 },players);
+
+});
+
+/* penalty toggle */
+
+penaltyBox.addEventListener("change",()=>{
+
+if(penaltyBox.checked){
+
+assistBtn.disabled=true;
+assistBtn.innerText="penalty goal";
+assistBtn.dataset.id="";
+
+earnedWrapper.style.display="block";
+
+}else{
+
+assistBtn.disabled=false;
+assistBtn.innerText="select";
+
+earnedWrapper.style.display="none";
+
+}
+
+});
+
+/* penalty earned */
+
+earnedBtn.addEventListener("click",()=>{
+
+const players=getActivePlayers();
+
+pickPlayer(player=>{
+
+earnedBtn.innerText=player.name;
+earnedBtn.dataset.id=player._id;
+
+},players);
+
+});
+
+});
 
 }
 
@@ -314,14 +411,25 @@ SUBMIT LINEUP
 
 async function submitLineup(){
 
-const players=[...lineup,...subs].filter(Boolean);
-
-const unique=new Set(players.map(p=>p._id));
-
-if(unique.size!==players.length){
-alert("Duplicate players");
+if(!currentMatch || !currentMatch._id){
+alert("Match not loaded yet");
 return;
 }
+
+/* ровно 11 игроков */
+
+if(lineup.filter(p=>p).length !== 11){
+alert("Starting lineup must contain exactly 11 players");
+return;
+}
+
+/* 0-5 замен */
+
+const subsIds = subs
+  .filter(p=>p)
+  .map(p=>p._id);
+
+const lineupIds = lineup.map(p=>p._id);
 
 await fetch(`/matches/${currentMatch._id}/predict-lineup`,{
 
@@ -333,8 +441,8 @@ Authorization:"Bearer "+token
 },
 
 body:JSON.stringify({
-lineup:lineup.map(p=>p?._id),
-subs:subs.map(p=>p?._id)
+lineup: lineupIds,
+subs: subsIds
 })
 
 });
@@ -343,16 +451,42 @@ alert("Lineup saved");
 
 }
 
+
 /* =========================
 SUBMIT RESULT
 ========================= */
 
 async function submitResult(){
 
-if(!motm){
+if(!currentMatch || !currentMatch._id){
+alert("Match not loaded yet");
+return;
+}
+
+if(!motm || !motm._id){
 alert("Select MOTM");
 return;
 }
+
+const goals=[];
+
+document.querySelectorAll(".goal-block").forEach(block=>{
+
+const scorer=block.querySelector(".scorer-btn")?.dataset?.id;
+const assist=block.querySelector(".assist-btn")?.dataset?.id;
+const penalty=block.querySelector(".penalty-checkbox")?.checked;
+const earned=block.querySelector(".earned-btn")?.dataset?.id;
+
+if(!scorer) return;
+
+goals.push({
+scorer,
+assist: penalty ? null : assist || null,
+isPenalty: penalty || false,
+penaltyEarned: penalty ? earned || null : null
+});
+
+});
 
 await fetch(`/matches/${currentMatch._id}/predict-result`,{
 
@@ -364,9 +498,10 @@ Authorization:"Bearer "+token
 },
 
 body:JSON.stringify({
-homeScore:homeScore.value,
-awayScore:awayScore.value,
-motm:motm._id
+homeScore: Number(homeScore.value || 0),
+awayScore: Number(awayScore.value || 0),
+motm: motm._id,
+goals
 })
 
 });
@@ -374,6 +509,7 @@ motm:motm._id
 alert("Result saved");
 
 }
+
 
 /* =========================
 LEADERBOARD
