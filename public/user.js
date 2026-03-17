@@ -14,6 +14,8 @@ let existingPrediction = null;
 let playerModal;
 let modalCallback;
 
+let deadline = null;
+
 /* =========================
 INIT
 ========================= */
@@ -132,8 +134,16 @@ awayScore.value = existingPrediction.predictedScore.away;
 /* motm */
 
 if(existingPrediction.motm){
-motm = existingPrediction.motm;
-motmName.innerText = motm.name;
+
+const player = existingPrediction.motm.player || existingPrediction.motm;
+
+motm = {
+_id: player._id,
+name: player.name
+};
+
+motmName.innerText = player.name;
+
 }
 
 buildPitch();
@@ -529,7 +539,12 @@ motm: motm?._id || null
 SUBMIT (единственный)
 ========================= */
 
-async function submitPrediction(){
+async function submitPrediction() {
+    
+if(deadline && new Date() >= deadline){
+alert("Prediction deadline passed");
+return;
+}
 
 if(!currentMatch || !currentMatch._id){
 alert("Match not loaded yet");
@@ -539,9 +554,14 @@ return;
 if(lineup.filter(p=>p).length !== 11){
 alert("Starting lineup must contain exactly 11 players");
 return;
+    }
+    
+if(!motm || !motm._id){
+alert("Please select Man Of The Match");
+return;
 }
 
-    const payload = collectPrediction();
+const payload = collectPrediction();
     
 
 console.log("PREDICTION PAYLOAD", payload)

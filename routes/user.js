@@ -278,4 +278,38 @@ router.get("/rating", authMiddleware(), async (req, res) => {
   }
 });
 
+
+/* =========================
+   USER PREDICTION HISTORY
+========================= */
+
+router.get("/history", authMiddleware(), async (req, res) => {
+
+try {
+
+const predictions = await UserPrediction.find({
+user: req.user.id
+})
+.populate("match","matchday homeTeam awayTeam")
+.sort({ createdAt: -1 });
+
+const result = predictions.map(p => ({
+
+matchday: p.matchday,
+points: p.points || 0,
+score: p.predictedScore,
+motm: p.motm
+
+}));
+
+res.json(result);
+
+} catch (err) {
+
+res.status(500).json({ message: err.message });
+
+}
+
+});
+
 export default router;
