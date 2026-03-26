@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
                  accept="image/*" style="display:none;">
         </td>
         <td><input class="form-control form-control-sm" value="${p.name || ""}"></td>
-        <td><input class="form-control form-control-sm" value="${p.team || ""}"></td>
+        
         <td>
           <select class="form-select form-select-sm">
             <option value="" ${!p.position ? "selected" : ""}>—</option>
@@ -243,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const updated = {
           name: inputs[1].value,
-          team: inputs[2].value,
+          // team: inputs[2].value,
           position: inputs[3].value,
           games: +inputs[4].value || 0,
           goals: +inputs[5].value || 0,
@@ -432,6 +432,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const leagueName = selectedOption.textContent;
     const banner = document.getElementById("leagueBanner");
 
+
+    if (banner) {
     if (e.target.value) {
       banner.style.display = "block";
       setTimeout(() => banner.classList.add("show"), 10);
@@ -440,6 +442,16 @@ document.addEventListener("DOMContentLoaded", () => {
       banner.classList.remove("show");
       setTimeout(() => (banner.style.display = "none"), 300);
     }
+  }
+
+    // if (e.target.value) {
+    //   banner.style.display = "block";
+    //   setTimeout(() => banner.classList.add("show"), 10);
+    //   banner.textContent = `Welcome to ${leagueName} League! 🎉`;
+    // } else {
+    //   banner.classList.remove("show");
+    //   setTimeout(() => (banner.style.display = "none"), 300);
+    // }
 
     loadPlayers(e.target.value);
   });

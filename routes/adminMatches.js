@@ -215,12 +215,28 @@ router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
     if (!squad)
       return res.status(404).json({ message: "Team squad not found" });
 
+    const squadPlayerIds = new Set(
+      squad.players.map(sp => {
+        if (sp.player) return sp.player.toString();
+        if (sp._id) return sp._id.toString();
+        return sp.toString();
+      })
+    );
+
     for (const p of players) {
-      if (!squad.players.some(id => id.toString() === p.playerId))
+      if (!squadPlayerIds.has(p.playerId)) {
         return res.status(400).json({
           message: `Player ${p.playerId} not in squad`
         });
+      }
     }
+
+    // for (const p of players) {
+    //   if (!squad.players.some(id => id.toString() === p.playerId))
+    //     return res.status(400).json({
+    //       message: `Player ${p.playerId} not in squad`
+    //     });
+    // }
 
     match.lineups[team] = players.map(p => ({
       player: new mongoose.Types.ObjectId(p.playerId),

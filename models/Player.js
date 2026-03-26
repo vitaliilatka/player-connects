@@ -110,10 +110,10 @@ const playerSchema = new mongoose.Schema(
    Unique name inside league
 ============================ */
 
-playerSchema.index(
-  { name: 1, league: 1 },
-  { unique: true }
-);
+// playerSchema.index(
+//   { name: 1, league: 1 },
+//   { unique: true }
+// );
 
 /* ============================
    VIRTUAL: RATING

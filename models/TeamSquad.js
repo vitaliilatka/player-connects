@@ -21,7 +21,8 @@ const TeamSquadSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "Player",
-        required: true
+        required: true,
+        joinedAt: Date
       }
     ]
   },
