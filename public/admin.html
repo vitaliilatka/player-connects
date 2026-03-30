@@ -224,7 +224,48 @@
 
 <!-- MATCHES -->
 <div class="tab-pane fade" id="matchesTab">
-  <div class="card p-3">Matches UI (next step)</div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+
+      <form id="createMatchForm" class="row g-2">
+
+        <div class="col-md-2">
+          <label>Matchday</label>
+          <input type="number" name="matchday" class="form-control form-control-sm" required>
+        </div>
+
+        <div class="col-md-3">
+          <label>Home Team</label>
+          <select id="homeTeamSelect" class="form-select form-select-sm" required></select>
+        </div>
+
+        <div class="col-md-3">
+          <label>Away Team</label>
+          <select id="awayTeamSelect" class="form-select form-select-sm" required></select>
+        </div>
+
+        <div class="col-md-2">
+          <label>Date</label>
+          <input type="date" name="date" class="form-control form-control-sm" required>
+        </div>
+
+        <div class="col-md-2">
+          <label>Time</label>
+          <input type="time" name="time" class="form-control form-control-sm" required>
+        </div>
+
+        <div class="col-md-12">
+          <button class="btn btn-primary btn-sm mt-2">
+            <i class="fa-solid fa-plus"></i> Create Match
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
 </div>
 
 <!-- LINEUP -->

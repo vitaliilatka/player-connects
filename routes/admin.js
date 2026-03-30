@@ -1,11 +1,11 @@
 // routes/admin.js
 import express from "express";
 import { authMiddleware } from "../middleware/authMiddleware.js";
-import { upload } from "../utils/uploadConfig.js"; // memoryStorage
-
+import { upload } from "../utils/uploadConfig.js";
 
 import League from "../models/League.js";
 import Player from "../models/Player.js";
+import TeamSquad from "../models/TeamSquad.js";
 
 const router = express.Router();
 
@@ -20,21 +20,25 @@ router.get("/leagues", authMiddleware(), async (req, res) => {
 
     res.json(leagues);
   } catch (err) {
-    console.error("League loading error:", err);
+    console.error(err);
     res.status(500).json({ message: "Failed to load leagues" });
   }
 });
 
 /* ============================
    POST /admin/leagues
+   🔥 FIX: lowercase
 ============================ */
 router.post("/leagues", authMiddleware(), async (req, res) => {
   try {
-    const { name } = req.body;
+    let { name } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: "League name is required" });
     }
+
+    name = name.trim();
+    const teamKey = name.toLowerCase(); // 🔥 ключ
 
     const existing = await League.findOne({ name });
     if (existing) {
@@ -42,55 +46,80 @@ router.post("/leagues", authMiddleware(), async (req, res) => {
     }
 
     const league = new League({
-      name,
+      name, // красиво для UI
       owner: req.user.id,
       admins: [req.user.id],
-      createdAt: new Date(),
     });
 
     await league.save();
+
+    // 🔥 создаем squad в lowercase
+    const existingSquad = await TeamSquad.findOne({ team: teamKey });
+
+    if (!existingSquad) {
+      await TeamSquad.create({
+        team: teamKey,
+        players: [],
+      });
+    }
+
     res.json(league);
   } catch (err) {
-    console.error("League creation error:", err);
+    console.error(err);
     res.status(500).json({ message: "Server error creating league" });
   }
 });
 
 /* ============================
    POST /admin/players
-   Add new player + Cloudinary
 ============================ */
 router.post(
   "/players",
   authMiddleware(),
-  upload.single("image"), // MEMORY STORAGE
+  upload.single("image"),
   async (req, res) => {
     try {
-      const { name, team, position, leagueId } = req.body;
+      const { name, position, leagueId } = req.body;
 
-      if (!name || !team || !position || !leagueId) {
-        return res
-          .status(400)
-          .json({ message: "All fields are required to add a player" });
+      if (!name || !position || !leagueId) {
+        return res.status(400).json({ message: "Missing fields" });
       }
 
-      const existing = await Player.findOne({ name, league: leagueId });
-      if (existing) {
-        return res
-          .status(400)
-          .json({ message: `Player "${name}" already exists in this league` });
+      const league = await League.findById(leagueId);
+      if (!league) {
+        return res.status(404).json({ message: "League not found" });
       }
+
+      const teamKey = league.name.trim().toLowerCase(); // 🔥
 
       const newPlayer = new Player({
         name,
-        team,
+        team: teamKey,
         position,
         league: leagueId,
-        image: req.file ? req.file.path : null, // ✅ Cloudinary URL
+        image: req.file ? req.file.path : null,
       });
 
       await newPlayer.save();
+
+      // 🔥 НАДЕЖНОЕ СОЗДАНИЕ/ПОИСК SQUAD
+      let squad = await TeamSquad.findOne({ team: teamKey });
+
+      if (!squad) {
+        squad = await TeamSquad.create({
+          team: teamKey,
+          players: [],
+        });
+      }
+
+      // 🔥 добавление игрока
+      if (!squad.players.includes(newPlayer._id)) {
+        squad.players.push(newPlayer._id);
+        await squad.save();
+      }
+
       res.status(201).json(newPlayer);
+
     } catch (err) {
       console.error("Player creation error:", err);
       res.status(500).json({ message: "Failed to add player" });
@@ -99,55 +128,7 @@ router.post(
 );
 
 /* ============================
-   GET /admin/players/:leagueId
-============================ */
-router.get("/players/:leagueId", authMiddleware(), async (req, res) => {
-  try {
-    const players = await Player.find({ league: req.params.leagueId });
-    res.json(players);
-  } catch (err) {
-    console.error("Player loading error:", err);
-    res.status(500).json({ error: "Failed to load players" });
-  }
-});
-
-/* ============================
-   PUT /admin/players/:id
-   Update + Cloudinary image
-============================ */
-
-
-
-router.put(
-  "/players/:id",
-  authMiddleware(),
-  upload.single("image"), 
-  async (req, res) => {
-    try {
-      const player = await Player.findById(req.params.id);
-      if (!player) {
-        return res.status(404).json({ message: "Player not found" });
-      }
-
-      // 🔥 Update image if uploaded
-      if (req.file) {
-        player.image = req.file.path; // ✅ Cloudinary URL
-      }
-
-      // Merge the rest of body fields
-      Object.assign(player, req.body);
-
-      await player.save();
-      res.json(player);
-    } catch (err) {
-      console.error("Player update error:", err);
-      res.status(500).json({ message: "Failed to update player" });
-    }
-  }
-);
-
-/* ============================
-   DELETE /admin/players/:id
+   DELETE player
 ============================ */
 router.delete("/players/:id", authMiddleware(), async (req, res) => {
   try {
@@ -156,9 +137,19 @@ router.delete("/players/:id", authMiddleware(), async (req, res) => {
 
     await player.deleteOne();
 
+    const squad = await TeamSquad.findOne({ team: player.team });
+
+    if (squad) {
+      squad.players = squad.players.filter(
+        (id) => id.toString() !== player._id.toString()
+      );
+      await squad.save();
+    }
+
     res.json({ message: "Player deleted" });
+
   } catch (err) {
-    console.error("Player deletion error:", err);
+    console.error(err);
     res.status(500).json({ message: "Failed to delete player" });
   }
 });

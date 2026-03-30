@@ -10,6 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const leagueSelect = document.getElementById("leagueSelect");
   const addPlayerForm = document.getElementById("addPlayerForm");
   const playersTbody = document.getElementById("playersTbody");
+  const createMatchForm = document.getElementById("createMatchForm");
+  const homeTeamSelect = document.getElementById("homeTeamSelect");
+  const awayTeamSelect = document.getElementById("awayTeamSelect");
 
   // === Check authentication ===
   if (!token) {
@@ -47,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // === Load leagues ===
+
   async function loadLeagues() {
     try {
       const res = await fetch(`${API_URL}/admin/leagues`, {
@@ -59,18 +63,38 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      leagueSelect.innerHTML = `<option value="">Choose league...</option>`;
+      // === Dropdown (players tab)
+      leagueSelect.innerHTML = `<option value="">Choose team...</option>`;
+
+      // === Dropdowns (matches tab)
+      homeTeamSelect.innerHTML = `<option value="">Home team...</option>`;
+      awayTeamSelect.innerHTML = `<option value="">Away team...</option>`;
+
       leagues.forEach((lg) => {
+        // Players tab
         const opt = document.createElement("option");
         opt.value = lg._id;
         opt.textContent = lg.name;
         leagueSelect.appendChild(opt);
+
+        // Matches tab (HOME)
+        const homeOpt = document.createElement("option");
+        homeOpt.value = lg._id;
+        homeOpt.textContent = lg.name;
+        homeTeamSelect.appendChild(homeOpt);
+
+        // Matches tab (AWAY)
+        const awayOpt = document.createElement("option");
+        awayOpt.value = lg._id;
+        awayOpt.textContent = lg.name;
+        awayTeamSelect.appendChild(awayOpt);
       });
 
     } catch (err) {
       console.error("Error loading leagues:", err);
     }
   }
+
 
   // ============================================
   //             RENDERING PLAYERS
@@ -455,6 +479,65 @@ document.addEventListener("DOMContentLoaded", () => {
 
     loadPlayers(e.target.value);
   });
+
+  // ============================================
+//             CREATE MATCH
+// ============================================
+
+  createMatchForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(createMatchForm);
+
+    const matchday = formData.get("matchday");
+    const homeTeam = homeTeamSelect.value;
+    const awayTeam = awayTeamSelect.value;
+    const date = formData.get("date");
+    const time = formData.get("time");
+
+    if (!homeTeam || !awayTeam) {
+      alert("Select both teams");
+      return;
+    }
+
+    if (homeTeam === awayTeam) {
+      alert("Teams must be different");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/admin/matches`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          matchday,
+          homeTeam,
+          awayTeam,
+          date,
+          time,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Match creation error:", text);
+        alert("Error creating match");
+        return;
+      }
+
+      alert("Match created!");
+      createMatchForm.reset();
+
+    } catch (err) {
+      console.error("Error creating match:", err);
+    }
+  });
+
+
+
 
   // Start
   loadLeagues();
