@@ -4,6 +4,8 @@ const API_URL = "https://player-connects-backend.onrender.com";
 let currentLeagueId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+
+
   const token = localStorage.getItem("token");
   const userId = localStorage.getItem("userId");
   const createLeagueBtn = document.getElementById("createLeagueBtn");
@@ -11,6 +13,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const addPlayerForm = document.getElementById("addPlayerForm");
   const playersTbody = document.getElementById("playersTbody");
   const createMatchForm = document.getElementById("createMatchForm");
+  const matchdaySelect = document.querySelector('[name="matchday"]');
+
+    for (let i = 1; i <= 38; i++) {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = `Matchday ${i}`;
+      matchdaySelect.appendChild(opt);
+    }
   const homeTeamSelect = document.getElementById("homeTeamSelect");
   const awayTeamSelect = document.getElementById("awayTeamSelect");
 
@@ -488,6 +498,7 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
 
     const formData = new FormData(createMatchForm);
+    
 
     const matchday = formData.get("matchday");
     const homeTeam = homeTeamSelect.value;

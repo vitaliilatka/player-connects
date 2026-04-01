@@ -10,6 +10,58 @@ import { processMatchdayWinner } from "../services/matchdayProcessor.js";
 
 const router = express.Router();
 
+
+/* =========================
+   CREATE MATCH (ADMIN)
+========================= */
+router.post("/", authMiddleware(), async (req, res) => {
+  try {
+    const { matchday, homeTeam, awayTeam, date, time } = req.body;
+
+    if (!matchday || !homeTeam || !awayTeam || !date || !time) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (homeTeam === awayTeam) {
+      return res.status(400).json({ message: "Teams must be different" });
+    }
+
+    // 🔒 Проверка: команда не может играть дважды в matchday
+    const existingMatches = await Match.find({ matchday });
+
+    for (const match of existingMatches) {
+      if (
+        match.homeTeam === homeTeam ||
+        match.awayTeam === homeTeam ||
+        match.homeTeam === awayTeam ||
+        match.awayTeam === awayTeam
+      ) {
+        return res.status(400).json({
+          message: "One of the teams already plays in this matchday",
+        });
+      }
+    }
+
+    const kickoff = new Date(`${date}T${time}`);
+
+    const newMatch = new Match({
+      matchday: Number(matchday),
+      homeTeam,
+      awayTeam,
+      kickoff,
+      status: "draft",
+    });
+
+    await newMatch.save();
+
+    res.status(201).json(newMatch);
+
+  } catch (err) {
+    console.error("Create match error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 /* =========================
    LINEUP VALIDATION
 ========================= */
