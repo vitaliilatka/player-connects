@@ -45,10 +45,14 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // === ROUTES ===
 
 // 🔥 ВАЖНО: правильный путь
+
+app.use("/admin/matches", adminMatchesRouter);
+
+
 app.use("/admin", adminRoutes);
 
 // остальные админские
-app.use("/admin/matches", adminMatchesRouter);
+
 app.use("/admin", adminTeamSquadsRouter);
 
 // публичные
