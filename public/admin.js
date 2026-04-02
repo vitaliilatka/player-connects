@@ -89,13 +89,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Matches tab (HOME)
         const homeOpt = document.createElement("option");
-        homeOpt.value = lg._id;
+        homeOpt.value = lg.name.toLowerCase();
         homeOpt.textContent = lg.name;
         homeTeamSelect.appendChild(homeOpt);
 
         // Matches tab (AWAY)
         const awayOpt = document.createElement("option");
-        awayOpt.value = lg._id;
+        awayOpt.value = lg.name.toLowerCase();
         awayOpt.textContent = lg.name;
         awayTeamSelect.appendChild(awayOpt);
       });
@@ -546,6 +546,9 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error creating match:", err);
     }
   });
+
+
+
 
 
 

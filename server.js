@@ -42,18 +42,25 @@ const __dirname = path.dirname(__filename);
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+
+app.set("strict routing", false);
+
 // === ROUTES ===
 
 // 🔥 ВАЖНО: правильный путь
 
 app.use("/admin/matches", adminMatchesRouter);
-
-
+app.use("/admin/teamsquads", adminTeamSquadsRouter);
 app.use("/admin", adminRoutes);
 
-// остальные админские
+// app.use("/admin/matches", adminMatchesRouter);
 
-app.use("/admin", adminTeamSquadsRouter);
+
+// app.use("/admin", adminRoutes);
+
+// // остальные админские
+
+// app.use("/admin", adminTeamSquadsRouter);
 
 // публичные
 app.use("/players", playersRouter);
@@ -62,6 +69,8 @@ app.use("/leagues", leaguesRouter);
 app.use("/user", userRoutes);
 app.use("/leaderboard", leaderboardRoutes);
 app.use("/matches", matchesRouter);
+
+console.log("ADMIN MATCHES ROUTE LOADED");
 
 // === MongoDB ===
 mongoose
