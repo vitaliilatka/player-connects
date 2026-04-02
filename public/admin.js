@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadLeagues() {
     try {
-      const res = await fetch(`${API_URL}/admin/leagues`, {
+      const res = await fetch(`${API_URL}/leagues`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
