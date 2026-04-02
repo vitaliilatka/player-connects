@@ -123,7 +123,20 @@ const app = express();
 
 // === CORS ===
 
-app.use(cors());
+app.use((req, res, next) => {
+  console.log("Incoming origin:", req.headers.origin);
+  next();
+});
+
+app.use(cors({
+  origin: "https://player-connects.onrender.com",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
+
+
+// app.use(cors());
 
 // app.use(cors({
 //   origin: function (origin, callback) {
