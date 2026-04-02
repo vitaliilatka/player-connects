@@ -130,7 +130,8 @@ app.use(cors({
       "http://localhost:4000",
       "http://localhost:5173",
       "https://playerconnects.netlify.app",
-      "https://player-connects.onrender.com"
+      "https://player-connects.onrender.com",
+      "https://player-connects-backend.onrender.com"
     ];
 
     // allow requests with no origin (like Postman)
