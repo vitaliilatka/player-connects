@@ -123,28 +123,30 @@ const app = express();
 
 // === CORS ===
 
-app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      "http://localhost:3000",
-      "http://localhost:4000",
-      "http://localhost:5173",
-      "https://playerconnects.netlify.app",
-      "https://player-connects.onrender.com",
-      "https://player-connects-backend.onrender.com"
-    ];
+app.use(cors());
 
-    // allow requests with no origin (like Postman)
-    if (!origin) return callback(null, true);
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     const allowedOrigins = [
+//       "http://localhost:3000",
+//       "http://localhost:4000",
+//       "http://localhost:5173",
+//       "https://playerconnects.netlify.app",
+//       "https://player-connects.onrender.com",
+//       "https://player-connects-backend.onrender.com"
+//     ];
 
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS not allowed"));
-    }
-  },
-  credentials: true
-}));
+//     // allow requests with no origin (like Postman)
+//     if (!origin) return callback(null, true);
+
+//     if (allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error("CORS not allowed"));
+//     }
+//   },
+//   credentials: true
+// }));
 
 // app.use(cors({
 //   origin: [
@@ -155,6 +157,8 @@ app.use(cors({
 //   ],
 //   credentials: true
 // }));
+
+console.log("CORS ENABLED");
 
 // === Emulate __dirname in ES Modules ===
 const __filename = fileURLToPath(import.meta.url);
