@@ -188,7 +188,7 @@
   </div>
 
   <script>
-    const API_URL = "https://player-connects-backend.onrender.com";
+    const API_URL = "";
   </script>
 
 
@@ -222,7 +222,7 @@
       const password = form.password.value.trim();
 
       try {
-        const API_URL = "https://player-connects-backend.onrender.com";
+        const API_URL = "";
         const res = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -261,7 +261,7 @@
         banner.classList.add("show");
 
         // Load players
-        await loadPlayersPublic(data.id);
+        await loadPlayers(data.id);
       } catch (err) {
         console.warn("⚠️ Error loading default league:", err.message);
       }
