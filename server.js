@@ -129,12 +129,9 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-  origin: "https://player-connects.onrender.com",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  origin: true,
   credentials: true
 }));
-
 
 // app.use(cors());
 
