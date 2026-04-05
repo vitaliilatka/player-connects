@@ -80,23 +80,23 @@ document.addEventListener("DOMContentLoaded", () => {
       homeTeamSelect.innerHTML = `<option value="">Home team...</option>`;
       awayTeamSelect.innerHTML = `<option value="">Away team...</option>`;
 
-      leagues.forEach((lg) => {
+      leagues.forEach((league) => {
         // Players tab
         const opt = document.createElement("option");
-        opt.value = lg._id;
-        opt.textContent = lg.name;
+        opt.value = league._id;
+        opt.textContent = league.name;
         leagueSelect.appendChild(opt);
 
         // Matches tab (HOME)
         const homeOpt = document.createElement("option");
-        homeOpt.value = lg.name.toLowerCase();
-        homeOpt.textContent = lg.name;
+        homeOpt.value = league.name.toLowerCase();
+        homeOpt.textContent = league.name;
         homeTeamSelect.appendChild(homeOpt);
 
         // Matches tab (AWAY)
         const awayOpt = document.createElement("option");
-        awayOpt.value = lg.name.toLowerCase();
-        awayOpt.textContent = lg.name;
+        awayOpt.value = league.name.toLowerCase();
+        awayOpt.textContent = league.name;
         awayTeamSelect.appendChild(awayOpt);
       });
 
