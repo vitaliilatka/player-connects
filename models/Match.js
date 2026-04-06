@@ -148,7 +148,7 @@ const MatchSchema = new Schema(
     league: {
       type: Schema.Types.ObjectId,
       ref: "League",
-      required: true,
+      required: false,
       index: true
     },
 

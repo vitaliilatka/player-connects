@@ -416,12 +416,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
 
-      // if (!res.ok) {
-      //   const errData = await res.json();
-      //   showAlert(errData.message || "Failed to add player", "warning");
-      //   return;
-      // }
-
       showAlert("Player added successfully!", "success");
 
       addPlayerForm.reset();
@@ -476,17 +470,8 @@ document.addEventListener("DOMContentLoaded", () => {
       banner.classList.remove("show");
       setTimeout(() => (banner.style.display = "none"), 300);
     }
-  }
-
-    // if (e.target.value) {
-    //   banner.style.display = "block";
-    //   setTimeout(() => banner.classList.add("show"), 10);
-    //   banner.textContent = `Welcome to ${leagueName} League! 🎉`;
-    // } else {
-    //   banner.classList.remove("show");
-    //   setTimeout(() => (banner.style.display = "none"), 300);
-    // }
-
+    }
+    
     loadPlayers(e.target.value);
   });
 
@@ -528,7 +513,7 @@ document.addEventListener("DOMContentLoaded", () => {
           homeTeam,
           awayTeam,
           date,
-          time,
+          time
         }),
       });
 
@@ -546,12 +531,6 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error creating match:", err);
     }
   });
-
-
-
-
-
-
 
   // Start
   loadLeagues();
