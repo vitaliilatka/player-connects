@@ -47,9 +47,11 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // === Route registration ===
 app.use("/players", playersRouter);
 app.use("/auth", authRouter);
-app.use("/leagues", leaguesRouter); // public routes
-app.use("/admin/players", adminRoutes); // старый админ для игроков
 app.use("/admin/matches", adminMatchesRouter); // новый админ для матчей
+app.use("/leagues", leaguesRouter); // public routes
+app.use("/admin", adminRoutes);
+app.use("/admin/players", adminRoutes); // старый админ для игроков
+
 app.use("/admin", adminTeamSquadsRouter);
 
 app.use("/user", userRoutes);

@@ -71,6 +71,22 @@ router.post("/leagues", authMiddleware(), async (req, res) => {
 });
 
 /* ============================
+   GET players by league
+============================ */
+router.get("/players/:leagueId", authMiddleware(), async (req, res) => {
+  try {
+    const players = await Player.find({
+      league: req.params.leagueId,
+    });
+
+    res.json(players);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to load players" });
+  }
+});
+
+/* ============================
    POST /admin/players
 ============================ */
 router.post(
