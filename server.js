@@ -28,6 +28,11 @@ const app = express();
 
 // === CORS ===
 
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+
 app.use((req, res, next) => {
   console.log("Incoming origin:", req.headers.origin);
   next();
