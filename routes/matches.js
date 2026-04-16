@@ -7,6 +7,28 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+// =========================
+// GET MATCHES BY MATCHDAY
+// =========================
+router.get("/", async (req, res) => {
+  try {
+    const { matchday } = req.query;
+
+    const filter = {};
+
+    if (matchday) {
+      filter.matchday = Number(matchday);
+    }
+
+    const matches = await Match.find(filter).sort({ date: 1 });
+
+    res.json(matches);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 /* =========================
    VALIDATE LINEUP
 ========================= */

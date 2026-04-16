@@ -127,7 +127,7 @@
   <ul class="nav nav-tabs mb-3" id="adminTabs">
 
   <li class="nav-item">
-    <button class="nav-link" data-bs-target="#matchesTab" data-bs-toggle="tab">
+    <button class="nav-link active" data-bs-target="#matchesTab" data-bs-toggle="tab">
       <i class="fa-solid fa-calendar"></i> Matches
     </button>
   </li>
@@ -152,29 +152,6 @@
   </li>
 
 </ul>
-
-  <!-- <ul class="nav nav-tabs mb-3" id="adminTabs">
-    <li class="nav-item">
-      <button class="nav-link active" data-bs-target="#playersTab" data-bs-toggle="tab">
-        <i class="fa-solid fa-users"></i> Players
-      </button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link" data-bs-target="#matchesTab" data-bs-toggle="tab">
-        <i class="fa-solid fa-calendar"></i> Matches
-      </button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link" data-bs-target="#lineupTab" data-bs-toggle="tab">
-        <i class="fa-solid fa-list"></i> Lineup
-      </button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link" data-bs-target="#resultsTab" data-bs-toggle="tab">
-        <i class="fa-solid fa-chart-line"></i> Results
-      </button>
-    </li>
-  </ul> -->
 
   <div class="tab-content">
 
@@ -301,7 +278,43 @@
 
 <!-- LINEUP -->
 <div class="tab-pane fade" id="lineupTab">
-  <div class="card p-3">Lineup UI (next step)</div>
+
+  <div class="card mb-3 p-3">
+
+    <div class="row g-2">
+
+      <div class="col-md-3">
+        <label>Matchday</label>
+        <select id="lineupMatchday" class="form-select form-select-sm"></select>
+      </div>
+
+      <div class="col-md-5">
+        <label>Match</label>
+        <select id="lineupMatch" class="form-select form-select-sm"></select>
+      </div>
+
+      <div class="col-md-2">
+        <label>Team</label>
+        <select id="lineupTeam" class="form-select form-select-sm">
+          <option value="home">Home</option>
+          <option value="away">Away</option>
+        </select>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="card p-3">
+
+    <div id="lineupPlayersContainer" class="row g-2"></div>
+
+    <button id="saveLineupBtn" class="btn btn-success btn-sm mt-3">
+      Save Lineup
+    </button>
+
+  </div>
+
 </div>
 
 <!-- RESULTS -->

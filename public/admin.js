@@ -224,6 +224,179 @@ document.addEventListener("DOMContentLoaded", () => {
     createMatchForm.reset();
   });
 
+  
+
+// =========================
+// LOAD MATCHES
+// =========================
+  
+const lineupMatchday = document.getElementById("lineupMatchday");
+const lineupMatch = document.getElementById("lineupMatch");
+const lineupTeam = document.getElementById("lineupTeam");
+const lineupPlayersContainer = document.getElementById("lineupPlayersContainer");
+const saveLineupBtn = document.getElementById("saveLineupBtn");
+
+let currentMatchId = null;
+let currentTeamName = null;
+let selectedPlayers = [];
+
+// matchdays
+for (let i = 1; i <= 38; i++) {
+  const opt = document.createElement("option");
+  opt.value = i;
+  opt.textContent = `Matchday ${i}`;
+  lineupMatchday.appendChild(opt);
+  }
+
+// =========================
+// LOAD MATCHES BY MATCHDAY
+// =========================
+  
+  lineupMatchday.addEventListener("change", async () => {
+
+  const matchday = lineupMatchday.value;
+
+  const res = await fetch(`/matches?matchday=${matchday}`);
+  const matches = await res.json();
+
+  lineupMatch.innerHTML = `<option value="">Select match</option>`;
+
+  matches.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m._id;
+    opt.textContent = `${m.homeTeam} vs ${m.awayTeam}`;
+    opt.dataset.home = m.homeTeam;
+    opt.dataset.away = m.awayTeam;
+    lineupMatch.appendChild(opt);
+  });
+  });
+  
+// =========================
+// SELECT MATCH
+  // =========================
+  
+  lineupMatch.addEventListener("change", async () => {
+
+  const selected = lineupMatch.options[lineupMatch.selectedIndex];
+
+  currentMatchId = selected.value;
+
+  const team = lineupTeam.value;
+  currentTeamName = selected.dataset[team];
+
+  loadSquad(currentTeamName);
+  });
+  
+// =========================
+// CHANGE TEAM
+  // =========================
+  
+  lineupTeam.addEventListener("change", () => {
+
+  const selected = lineupMatch.options[lineupMatch.selectedIndex];
+  if (!selected) return;
+
+  currentTeamName = selected.dataset[lineupTeam.value];
+  loadSquad(currentTeamName);
+  });
+  
+
+// =========================
+// LOAD SQUAD
+  // =========================
+
+  async function loadSquad(team) {
+
+  if (!team) return;
+
+  const res = await fetch(`/admin/teamsquads/${team}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const squad = await res.json();
+
+  renderSquad(squad.players);
+  }
+  
+// =========================
+// RENDER PLAYERS
+  // =========================
+  
+  function renderSquad(players) {
+
+  lineupPlayersContainer.innerHTML = "";
+  selectedPlayers = [];
+
+  players.forEach(p => {
+
+    const col = document.createElement("div");
+    col.className = "col-md-3";
+
+    col.innerHTML = `
+      <div class="card p-2">
+        <label>
+          <input type="checkbox" value="${p._id}">
+          ${p.name}
+        </label>
+
+        <select class="form-select form-select-sm mt-1">
+          <option value="">Pos</option>
+          <option value="GK">GK</option>
+          <option value="DEF">DEF</option>
+          <option value="MID">MID</option>
+          <option value="FW">FW</option>
+        </select>
+      </div>
+    `;
+
+    lineupPlayersContainer.appendChild(col);
+  });
+  }
+
+  // =========================
+// SAVE LINEUP
+  // =========================
+
+  saveLineupBtn.addEventListener("click", async () => {
+
+  const cards = lineupPlayersContainer.querySelectorAll(".card");
+
+  const players = [];
+
+  cards.forEach(card => {
+    const checkbox = card.querySelector("input");
+    const select = card.querySelector("select");
+
+    if (checkbox.checked) {
+      players.push({
+        playerId: checkbox.value,
+        position: select.value
+      });
+    }
+  });
+
+  const res = await fetch(`/admin/matches/${currentMatchId}/lineup`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      team: lineupTeam.value,
+      players
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.message);
+    return;
+  }
+
+  alert("Lineup saved!");
+});
+
   // старт
   loadLeagues();
 });
