@@ -5,6 +5,27 @@ import Player from "../models/Player.js";
 
 const router = express.Router();
 
+
+
+// 🔥 GET players by team name
+router.get("/team/:teamName", async (req, res) => {
+  try {
+    const teamName = req.params.teamName;
+
+    const players = await Player.find({ team: teamName });
+
+    if (!players.length) {
+      return res.status(404).json({ message: "No players found for this team" });
+    }
+
+    res.json(players);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 /* ===========================================
    GET /leagues
    Get all leagues (public)

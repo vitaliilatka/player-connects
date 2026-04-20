@@ -23,19 +23,14 @@
     }
 
     .nav-tabs .nav-link.active {
-      font-weight: bold;
+      background: #0d6efd;
+      color: #fff;
+      border-radius: 8px;
     }
 
     .table td, .table th {
       text-align: center;
       vertical-align: middle;
-    }
-
-    .thumb {
-      width: 34px;
-      height: 34px;
-      object-fit: cover;
-      border-radius: 6px;
     }
   </style>
 </head>
@@ -45,242 +40,164 @@
 <div class="container-fluid">
 
   <!-- HEADER -->
-  <!DOCTYPE html>
-
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin · Players</title>
-
-  <!-- Bootstrap + FontAwesome -->
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-  <link rel="icon" type="image/png" href="/favicon.png" />
-
-  <style>
-    body {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #e8f0fe 0%, #f6f9ff 100%);
-      font-size: 0.875rem;
-    }
-    .card {
-      border: 0;
-      border-radius: 14px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.05);
-      background: #ffffffcc;
-      backdrop-filter: blur(2px);
-    }
-    .thumb { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; }
-    .td-thumb { width: 42px; }
-    .nav-tabs .nav-link.active {
-      background: #0d6efd;
-      color: #fff;
-      border-radius: 8px;
-    }
-  </style>
-
-</head>
-
-<body class="py-3">
-<div class="container-fluid">
-
-  <!-- TOP -->
-
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0">⚙️ Admin Panel</h3>
 
-```
-<div class="d-flex align-items-center gap-3">
-  <span id="welcomeAdmin"></span>
-  <button id="logoutBtn" class="btn btn-sm btn-outline-secondary">
-    <i class="fa-solid fa-right-from-bracket"></i>
-  </button>
-</div>
-```
-
+    <div class="d-flex align-items-center gap-3">
+      <span id="welcomeAdmin"></span>
+      <button id="logoutBtn" class="btn btn-sm btn-outline-secondary">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
   </div>
 
   <!-- ALERT -->
-
   <div id="adminAlert" class="position-fixed bottom-0 end-0 p-3"></div>
 
   <!-- LEAGUE SELECT -->
-
   <div class="mb-3 d-flex gap-2">
     <button id="createLeagueBtn" class="btn btn-sm btn-primary">
       <i class="fa-solid fa-plus"></i> Create Team
     </button>
 
-```
-<select id="leagueSelect" class="form-select form-select-sm" style="max-width:250px;">
-  <option value="">Choose team...</option>
-</select>
-```
-
+    <select id="leagueSelect" class="form-select form-select-sm" style="max-width:250px;">
+      <option value="">Choose team...</option>
+    </select>
   </div>
 
   <!-- TABS -->
-
-
   <ul class="nav nav-tabs mb-3" id="adminTabs">
 
-  <li class="nav-item">
-    <button class="nav-link active" data-bs-target="#matchesTab" data-bs-toggle="tab">
-      <i class="fa-solid fa-calendar"></i> Matches
-    </button>
-  </li>
+    <li class="nav-item">
+      <button class="nav-link active" data-bs-target="#matchesTab" data-bs-toggle="tab">
+        <i class="fa-solid fa-calendar"></i> Matches
+      </button>
+    </li>
 
-  <li class="nav-item">
-    <button class="nav-link" data-bs-target="#lineupTab" data-bs-toggle="tab">
-      <i class="fa-solid fa-list"></i> Lineup
-    </button>
-  </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-target="#lineupTab" data-bs-toggle="tab">
+        <i class="fa-solid fa-list"></i> Lineup
+      </button>
+    </li>
 
-  <li class="nav-item">
-    <button class="nav-link" data-bs-target="#resultsTab" data-bs-toggle="tab">
-      <i class="fa-solid fa-chart-line"></i> Results
-    </button>
-  </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-target="#resultsTab" data-bs-toggle="tab">
+        <i class="fa-solid fa-chart-line"></i> Results
+      </button>
+    </li>
 
-  <!-- 🔥 PLAYERS В КОНЕЦ -->
-  <li class="nav-item">
-    <button class="nav-link" data-bs-target="#playersTab" data-bs-toggle="tab" id="playersTabBtn">
-      <i class="fa-solid fa-users"></i> Players
-    </button>
-  </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-target="#playersTab" data-bs-toggle="tab">
+        <i class="fa-solid fa-users"></i> Players
+      </button>
+    </li>
 
-</ul>
+  </ul>
 
   <div class="tab-content">
 
-```
-<!-- PLAYERS -->
-<div class="tab-pane fade" id="playersTab">
+    <!-- PLAYERS -->
+    <div class="tab-pane fade" id="playersTab">
 
-  <!-- ADD PLAYER -->
-  <div class="card mb-3">
-    <div class="card-body p-2">
-      <form id="addPlayerForm" class="row g-2 align-items-end">
+      <div class="card mb-3">
+        <div class="card-body p-2">
+          <form id="addPlayerForm" class="row g-2 align-items-end">
 
-        <div class="col-md-2">
-          <label>Name</label>
-          <input name="name" required class="form-control form-control-sm">
+            <div class="col-md-2">
+              <label>Name</label>
+              <input name="name" required class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-2">
+              <label>Team</label>
+              <input name="team" required class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-1">
+              <label>Pos</label>
+              <select name="position" required class="form-select form-select-sm">
+                <option value="">—</option>
+                <option value="GK">GK</option>
+                <option value="DEF">DEF</option>
+                <option value="MID">MID</option>
+                <option value="FW">FW</option>
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label>Image</label>
+              <input type="file" name="image" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-1">
+              <button class="btn btn-success btn-sm">Add</button>
+            </div>
+
+          </form>
         </div>
-
-        <div class="col-md-2">
-          <label>Team</label>
-          <input name="team" required class="form-control form-control-sm">
-        </div>
-
-        <div class="col-md-1">
-          <label>Pos</label>
-          <select name="position" required class="form-select form-select-sm">
-            <option value="">—</option>
-            <option value="GK">GK</option>
-            <option value="DEF">DEF</option>
-            <option value="MID">MID</option>
-            <option value="FW">FW</option>
-          </select>
-        </div>
-
-        <div class="col-md-2">
-          <label>Image</label>
-          <input type="file" name="image" class="form-control form-control-sm">
-        </div>
-
-        <div class="col-md-1">
-          <button class="btn btn-success btn-sm">Add</button>
-        </div>
-
-      </form>
-    </div>
-  </div>
-
-  <!-- TABLE -->
-  <div class="card">
-    <div class="card-body p-2">
-      <div class="table-responsive">
-        <table class="table table-sm table-striped text-center">
-          <thead class="table-light">
-            <tr>
-              <th></th>
-              <th>Name</th>
-              <th>Team</th>
-              <th>Pos</th>
-              <th><i class="fa-solid fa-gamepad"></i></th>
-              <th><i class="fa-solid fa-futbol text-success"></i></th>
-              <th><i class="fa-solid fa-arrow-right-long text-primary"></i></th>
-              <th><i class="fa-solid fa-shield-halved"></i></th>
-              <th><i class="fa-solid fa-hand text-warning"></i></th>
-              <th><i class="fa-solid fa-broom text-info"></i></th>
-              <th><i class="fa-solid fa-futbol text-danger"></i></th>
-              <th>⭐</th>
-              <th>Rating</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="playersTbody"></tbody>
-        </table>
       </div>
-    </div>
-  </div>
 
-</div>
-
-<!-- MATCHES -->
-<div class="tab-pane fade show active" id="matchesTab">
-
-  <div class="card mb-3">
-    <div class="card-body">
-
-      <form id="createMatchForm" class="row g-2">
-
-        <div class="col-md-2">
-          <select name="matchday" class="form-select form-select-sm" required>
-            <option value="">Matchday...</option>
-          </select>
+      <div class="card">
+        <div class="card-body p-2">
+          <table class="table table-sm table-striped text-center">
+            <tbody id="playersTbody"></tbody>
+          </table>
         </div>
-
-        <div class="col-md-3">
-          <label>Home Team</label>
-          <select id="homeTeamSelect" class="form-select form-select-sm" required></select>
-        </div>
-
-        <div class="col-md-3">
-          <label>Away Team</label>
-          <select id="awayTeamSelect" class="form-select form-select-sm" required></select>
-        </div>
-
-        <div class="col-md-2">
-          <label>Date</label>
-          <input type="date" name="date" class="form-control form-control-sm" required>
-        </div>
-
-        <div class="col-md-2">
-          <label>Time</label>
-          <input type="time" name="time" class="form-control form-control-sm" required>
-        </div>
-
-        <div class="col-md-12">
-          <button class="btn btn-primary btn-sm mt-2">
-            <i class="fa-solid fa-plus"></i> Create Match
-          </button>
-        </div>
-
-      </form>
+      </div>
 
     </div>
-  </div>
 
-</div>
+    <!-- MATCHES -->
+    <div class="tab-pane fade show active" id="matchesTab">
 
-<!-- LINEUP -->
+      <div class="card mb-3">
+        <div class="card-body">
+
+          <form id="createMatchForm" class="row g-2">
+
+            <div class="col-md-2">
+              <select name="matchday" class="form-select form-select-sm" required>
+                <option value="">Matchday...</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label>Home Team</label>
+              <select id="homeTeamSelect" class="form-select form-select-sm" required></select>
+            </div>
+
+            <div class="col-md-3">
+              <label>Away Team</label>
+              <select id="awayTeamSelect" class="form-select form-select-sm" required></select>
+            </div>
+
+            <div class="col-md-2">
+              <label>Date</label>
+              <input type="date" name="date" class="form-control form-control-sm" required>
+            </div>
+
+            <div class="col-md-2">
+              <label>Time</label>
+              <input type="time" name="time" class="form-control form-control-sm" required>
+            </div>
+
+            <div class="col-md-12">
+              <button class="btn btn-primary btn-sm mt-2">
+                Create Match
+              </button>
+            </div>
+
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LINEUP -->
 <div class="tab-pane fade" id="lineupTab">
 
   <div class="card mb-3 p-3">
-
     <div class="row g-2">
 
       <div class="col-md-3">
@@ -293,21 +210,16 @@
         <select id="lineupMatch" class="form-select form-select-sm"></select>
       </div>
 
-      <div class="col-md-2">
-        <label>Team</label>
-        <select id="lineupTeam" class="form-select form-select-sm">
-          <option value="home">Home</option>
-          <option value="away">Away</option>
-        </select>
-      </div>
-
     </div>
-
   </div>
 
   <div class="card p-3">
 
-    <div id="lineupPlayersContainer" class="row g-2"></div>
+    <h6>Home Team</h6>
+    <div id="homePlayers" class="row g-2 mb-3"></div>
+
+    <h6>Away Team</h6>
+    <div id="awayPlayers" class="row g-2"></div>
 
     <button id="saveLineupBtn" class="btn btn-success btn-sm mt-3">
       Save Lineup
@@ -317,18 +229,16 @@
 
 </div>
 
-<!-- RESULTS -->
-<div class="tab-pane fade" id="resultsTab">
-  <div class="card p-3">Results UI (next step)</div>
-</div>
-```
+    <!-- RESULTS -->
+    <div class="tab-pane fade" id="resultsTab">
+      <div class="card p-3">Results UI (next step)</div>
+    </div>
 
   </div>
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script type="module" src="admin.js"></script>
 
 <script>

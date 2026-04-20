@@ -21,7 +21,12 @@ const playerSchema = new mongoose.Schema(
 
     team: {
       type: String,
-      default: ""
+      required: true,
+      set: v =>
+        v.toLowerCase()
+        .split(" ")
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ")
     },
 
     league: {

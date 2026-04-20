@@ -7,6 +7,8 @@ import TeamSquad from "../models/TeamSquad.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { processMatch } from "../services/matchProcessor.js";
 import { updateRating } from "../services/ratingProcessor.js";
+import Player from "../models/Player.js";
+
 
 import { processMatchdayWinner } from "../services/matchdayProcessor.js";
 
@@ -220,14 +222,17 @@ router.post("/", authMiddleware("admin"), async (req, res) => {
 
 router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
 
-  const { team, players } = req.body;
+  const { home, away } = req.body;
 
-  if (!["home", "away"].includes(team))
-    return res.status(400).json({ message: "Invalid team" });
+  if (!home || !away) {
+    return res.status(400).json({ message: "Both lineups required" });
+  }
 
-  const validationError = validateLineup(players);
-  if (validationError)
-    return res.status(400).json({ message: validationError });
+  const homeError = validateLineup(home);
+  if (homeError) return res.status(400).json({ message: "Home: " + homeError });
+
+  const awayError = validateLineup(away);
+  if (awayError) return res.status(400).json({ message: "Away: " + awayError });
 
   try {
 
@@ -235,43 +240,54 @@ router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
     if (!match)
       return res.status(404).json({ message: "Match not found" });
 
-    const teamName = team === "home" ? match.homeTeam : match.awayTeam;
-    const squad = await TeamSquad.findOne({ team: teamName });
+    // 🔥 ВАЖНО: берём игроков из Player, НЕ TeamSquad
+    const homePlayersDb = await Player.find({ team: match.homeTeam });
+    const awayPlayersDb = await Player.find({ team: match.awayTeam });
 
-    if (!squad)
-      return res.status(404).json({ message: "Team squad not found" });
+    const homeIds = new Set(homePlayersDb.map(p => p._id.toString()));
+    const awayIds = new Set(awayPlayersDb.map(p => p._id.toString()));
 
-    const squadPlayerIds = new Set(
-      squad.players.map(sp => {
-        if (sp.player) return sp.player.toString();
-        if (sp._id) return sp._id.toString();
-        return sp.toString();
-      })
-    );
-
-    for (const p of players) {
-      if (!squadPlayerIds.has(p.playerId)) {
+    // проверка home
+    for (const p of home) {
+      if (!homeIds.has(p.playerId)) {
         return res.status(400).json({
-          message: `Player ${p.playerId} not in squad`
+          message: `Home player ${p.playerId} not in team`
         });
       }
     }
 
+    // проверка away
+    for (const p of away) {
+      if (!awayIds.has(p.playerId)) {
+        return res.status(400).json({
+          message: `Away player ${p.playerId} not in team`
+        });
+      }
+    }
 
-    match.lineups[team] = players.map(p => ({
+    // сохраняем
+    match.lineups.home = home.map(p => ({
+      player: new mongoose.Types.ObjectId(p.playerId),
+      position: p.position.toUpperCase()
+    }));
+
+    match.lineups.away = away.map(p => ({
       player: new mongoose.Types.ObjectId(p.playerId),
       position: p.position.toUpperCase()
     }));
 
     match.status = "live";
+
     await match.save();
 
-    res.json({ message: "Lineup saved" });
+    res.json({ message: "Lineups saved" });
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
+
 
 /* =========================
    SAVE RESULT
