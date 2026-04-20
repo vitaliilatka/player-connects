@@ -25,6 +25,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const saveLineupBtn = document.getElementById("saveLineupBtn");
 
+  const resultsMatchday = document.getElementById("resultsMatchday");
+  const resultsMatch = document.getElementById("resultsMatch");
+
+  const homeScoreInput = document.getElementById("homeScore");
+  const awayScoreInput = document.getElementById("awayScore");
+
+  const homeTeamName = document.getElementById("homeTeamName");
+  const awayTeamName = document.getElementById("awayTeamName");
+
+  const saveResultBtn = document.getElementById("saveResultBtn");
+
   let currentMatchId = null;
 
   if (!token) {
@@ -51,6 +62,93 @@ document.addEventListener("DOMContentLoaded", () => {
     opt.textContent = `Matchday ${i}`;
     lineupMatchday.appendChild(opt);
   }
+
+  // =========================
+  // MATCHDAY OPTIONS (RESULTS)
+  // =========================\
+
+  for (let i = 1; i <= 38; i++) {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = `Matchday ${i}`;
+    resultsMatchday.appendChild(opt);
+  }
+
+
+  resultsMatchday.addEventListener("change", async () => {
+    const res = await fetch(`/matches?matchday=${resultsMatchday.value}`);
+    const matches = await res.json();
+
+    resultsMatch.innerHTML = `<option value="">Select match</option>`;
+
+    matches.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m._id;
+      opt.textContent = `${m.homeTeam} vs ${m.awayTeam}`;
+      opt.dataset.home = m.homeTeam;
+      opt.dataset.away = m.awayTeam;
+      resultsMatch.appendChild(opt);
+    });
+  });
+
+  resultsMatch.addEventListener("change", () => {
+    const selected = resultsMatch.options[resultsMatch.selectedIndex];
+    if (!selected.value) return;
+
+    currentMatchId = selected.value;
+
+    homeTeamName.textContent = selected.dataset.home;
+    awayTeamName.textContent = selected.dataset.away;
+  });
+
+
+  saveResultBtn.addEventListener("click", async () => {
+
+    const homeScore = Number(homeScoreInput.value);
+    const awayScore = Number(awayScoreInput.value);
+
+    if (isNaN(homeScore) || isNaN(awayScore)) {
+      alert("Enter valid scores");
+      return;
+    }
+
+    // 🔥 отправляем ДВА запроса (home + away)
+    const body = {
+      score: {
+        home: homeScore,
+        away: awayScore
+      }
+    };
+
+    const [homeRes, awayRes] = await Promise.all([
+      fetch(`/admin/matches/${currentMatchId}/result`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...body, team: "home" })
+      }),
+
+      fetch(`/admin/matches/${currentMatchId}/result`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...body, team: "away" })
+      })
+    ]);
+
+    if (!homeRes.ok || !awayRes.ok) {
+      alert("Error saving result");
+      return;
+    }
+
+    alert("Result saved!");
+  });
+
+
 
   // =========================
   // LOAD LEAGUES
