@@ -29,6 +29,30 @@ router.get("/", async (req, res) => {
   }
 });
 
+
+// =========================
+// GET MATCH BY ID
+// =========================
+router.get("/:matchId", async (req, res) => {
+  try {
+    const match = await Match.findById(req.params.matchId)
+      .populate("lineups.home.player", "name")
+      .populate("lineups.away.player", "name");
+
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    res.json(match);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
+
+
 /* =========================
    VALIDATE LINEUP
 ========================= */
@@ -171,6 +195,7 @@ function validatePrediction({
 
   return null;
 }
+
 
 /* =========================
    POST PREDICT LINEUP

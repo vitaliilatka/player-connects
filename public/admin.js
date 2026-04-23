@@ -3,6 +3,12 @@
 const API_URL = "";
 let currentLeagueId = null;
 
+let currentLineup = {
+  home: [],
+  away: []
+};
+
+
 document.addEventListener("DOMContentLoaded", () => {
   const token = localStorage.getItem("token");
 
@@ -74,6 +80,15 @@ document.addEventListener("DOMContentLoaded", () => {
     resultsMatchday.appendChild(opt);
   }
 
+  async function loadMatchById(matchId) {
+    const res = await fetch(`/matches/${matchId}`);
+    const match = await res.json();
+
+    console.log("MATCH DATA:", match); // debug
+
+    return match;
+  }
+
 
   resultsMatchday.addEventListener("change", async () => {
     const res = await fetch(`/matches?matchday=${resultsMatchday.value}`);
@@ -91,7 +106,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  resultsMatch.addEventListener("change", () => {
+
+  resultsMatch.addEventListener("change", async () => {
     const selected = resultsMatch.options[resultsMatch.selectedIndex];
     if (!selected.value) return;
 
@@ -99,7 +115,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
     homeTeamName.textContent = selected.dataset.home;
     awayTeamName.textContent = selected.dataset.away;
+
+    try {
+      const match = await loadMatchById(currentMatchId);
+
+      if (!match.lineups || !match.lineups.home?.length) {
+        alert("Lineup not set for this match");
+        return;
+      }
+
+      currentLineup.home = match.lineups.home;
+      currentLineup.away = match.lineups.away;
+
+      renderLineup(currentLineup.home, "homeLineup");
+      renderLineup(currentLineup.away, "awayLineup");
+
+    } catch (err) {
+      console.error("Error loading match:", err);
+    }
   });
+
+  // -----------------------------------------------------------------------------
+
+  // resultsMatch.addEventListener("change", () => {
+  //   const selected = resultsMatch.options[resultsMatch.selectedIndex];
+  //   if (!selected.value) return;
+
+  //   currentMatchId = selected.value;
+
+  //   homeTeamName.textContent = selected.dataset.home;
+  //   awayTeamName.textContent = selected.dataset.away;
+  // });
+  // -----------------------------------------------------------------------------------
+
+
+  function renderLineup(players, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    players.forEach(p => {
+      const col = document.createElement("div");
+      col.className = "col-md-3";
+
+      const name = p.name || p.player?.name || "Unknown";
+
+      col.innerHTML = `
+        <div class="card p-2 text-center">
+          ${name} (${p.position})
+        </div>
+      `;
+
+      container.appendChild(col);
+    });
+  }
 
 
   saveResultBtn.addEventListener("click", async () => {
