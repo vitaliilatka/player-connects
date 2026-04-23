@@ -80,6 +80,33 @@ function validateLineup(players) {
   return null;
 }
 
+
+// =========================
+// SAVE SUBSTITUTIONS (ADMIN)
+// =========================
+router.post("/:matchId/substitutions", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { home = [], away = [] } = req.body;
+
+    const match = await Match.findById(matchId);
+    if (!match)
+      return res.status(404).json({ message: "Match not found" });
+
+    match.substitutions = {
+      home,
+      away
+    };
+
+    await match.save();
+
+    res.json({ message: "Substitutions saved" });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 /* =========================
    STRICT PREDICTION VALIDATION
 ========================= */
