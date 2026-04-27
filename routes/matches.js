@@ -93,6 +93,34 @@ router.post("/:matchId/substitutions", async (req, res) => {
     if (!match)
       return res.status(404).json({ message: "Match not found" });
 
+    function validateSubs(subs) {
+      const used = new Set();
+
+      for (const s of subs) {
+        if (used.has(s.playerOut.toString())) {
+          return "Player cannot be substituted twice";
+        }
+        used.add(s.playerOut.toString());
+      }
+
+      const homeError = validateSubs(home);
+      if (homeError)
+        return res.status(400).json({ message: homeError });
+
+      const awayError = validateSubs(away);
+      if (awayError)
+        return res.status(400).json({ message: awayError });
+
+      const usedIn = new Set();
+
+      if (usedIn.has(s.playerIn.toString())) {
+        return "Player cannot come in twice";
+      }
+      usedIn.add(s.playerIn.toString());
+
+      return null;
+    }
+
     match.substitutions = {
       home,
       away

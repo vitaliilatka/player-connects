@@ -32,6 +32,12 @@
       text-align: center;
       vertical-align: middle;
     }
+    .pitch {
+      background: green;
+      border-radius: 10px;
+      padding: 10px;
+      color: white;
+    }
   </style>
 </head>
 
@@ -246,6 +252,15 @@
             <select id="resultsMatch" class="form-select form-select-sm"></select>
           </div>
 
+          <div class="d-flex gap-1 mb-1">
+            <select class="form-select form-select-sm out"></select>
+            <span>→</span>
+            <select class="form-select form-select-sm in"></select>
+            <input class="form-control form-control-sm" style="width:60px" placeholder="min">
+          </div>
+
+          
+
           <h6>Home Lineup</h6>
           <div id="homeLineup" class="row mb-3"></div>
 
@@ -258,10 +273,49 @@
           <h6 class="mt-3">Away Substitutions</h6>
           <div id="awaySubs" class="row"></div>
 
-          <button id="saveSubsBtn" class="btn btn-warning mt-3">
-            Save Substitutions
-          </button>
+          <!-- EVENTS -->
 
+      <div class="card p-3 mt-3">
+
+        <h5>Match Events</h5>
+
+        <!-- GOALS -->
+        <h6 class="mt-3">Home Goals</h6>
+        <div id="homeGoals"></div>
+        
+
+        <h6>Away Goals</h6>
+        <div id="awayGoals"></div>
+       
+
+        <!-- MISSED PENALTIES -->
+        <h6 class="mt-3">Missed Penalties</h6>
+        <div id="homeMissedPenalties"></div>
+        <button class="btn btn-sm btn-outline-warning mb-2" onclick="addMissedPenalty('home')">
+          + Add Missed Penalty
+        </button>
+        <div id="awayMissedPenalties"></div>
+        <button class="btn btn-sm btn-outline-warning mb-2" onclick="addMissedPenalty('away')">
+          + Add Missed Penalty
+        </button>
+
+        <!-- CARDS -->
+        <h6 class="mt-3">Cards</h6>
+        <div id="homeCards"></div>
+        <button class="btn btn-sm btn-outline-danger mb-2" onclick="addCard('home')">
+          + Add Card
+        </button>
+
+        <div id="awayCards"></div>
+        <button class="btn btn-sm btn-outline-danger mb-2" onclick="addCard('away')">
+          + Add Card
+        </button>
+
+        <!-- MOTM -->
+        <h6 class="mt-3">Man of the Match</h6>
+        <select id="motmSelect" class="form-select form-select-sm"></select>
+
+      </div>
         </div>
       </div>
 
