@@ -288,106 +288,132 @@ router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
   }
 });
 
+router.post("/:id/full", authMiddleware("admin"), async (req, res) => {
+  const { id } = req.params;
 
-/* =========================
-   SAVE RESULT
-========================= */
-
-router.post("/:id/result", authMiddleware("admin"), async (req, res) => {
+  const {
+    goals,
+    substitutions,
+    missedPenalties,
+    cards,
+    motm,
+    score
+  } = req.body;
 
   try {
+    const match = await Match.findById(id);
 
-    const {
-      team,
-      subs = [],
-      goals = [],
-      missedPenalties = [],
-      cards = [],
-      motm = null,
-      score
-    } = req.body;
-
-    if (!["home", "away"].includes(team))
-      return res.status(400).json({ message: "Invalid team" });
-
-    const match = await Match.findById(req.params.id);
-    if (!match)
+    if (!match) {
       return res.status(404).json({ message: "Match not found" });
+    }
 
-    const lineup = match.lineups[team];
+    /* =========================
+       GOALS
+    ========================= */
+    match.events.goals.home = (goals.home || []).map(g => ({
+      scorer: new mongoose.Types.ObjectId(g.scorer),
+      assist: g.assist ? new mongoose.Types.ObjectId(g.assist) : null,
+      minute: g.minute,
+      ownGoal: false,
+      penalty: {
+        isPenalty: g.penalty?.isPenalty || false,
+        earnedBy: g.penalty?.earnedBy
+          ? new mongoose.Types.ObjectId(g.penalty.earnedBy)
+          : null
+      }
+    }));
 
-    const preparedSubs = subs.map(s => ({
+    match.events.goals.away = (goals.away || []).map(g => ({
+      scorer: new mongoose.Types.ObjectId(g.scorer),
+      assist: g.assist ? new mongoose.Types.ObjectId(g.assist) : null,
+      minute: g.minute,
+      ownGoal: false,
+      penalty: {
+        isPenalty: g.penalty?.isPenalty || false,
+        earnedBy: g.penalty?.earnedBy
+          ? new mongoose.Types.ObjectId(g.penalty.earnedBy)
+          : null
+      }
+    }));
+
+    /* =========================
+       SUBSTITUTIONS
+    ========================= */
+    match.substitutions.home = (substitutions.home || []).map(s => ({
       minute: s.minute,
       playerOut: new mongoose.Types.ObjectId(s.playerOut),
       playerIn: new mongoose.Types.ObjectId(s.playerIn)
     }));
 
-    const preparedGoals = goals.map(g => ({
-      scorer: new mongoose.Types.ObjectId(g.scorer),
-      assist: g.assist ? new mongoose.Types.ObjectId(g.assist) : null,
-      minute: g.minute
+    match.substitutions.away = (substitutions.away || []).map(s => ({
+      minute: s.minute,
+      playerOut: new mongoose.Types.ObjectId(s.playerOut),
+      playerIn: new mongoose.Types.ObjectId(s.playerIn)
     }));
 
-    const preparedMissed = missedPenalties.map(p => ({
+    /* =========================
+       MISSED PENALTIES
+    ========================= */
+    match.events.missedPenalties.home = (missedPenalties.home || []).map(p => ({
       minute: p.minute,
-      takenBy: new mongoose.Types.ObjectId(p.takenBy),
-      earnedBy: p.earnedBy
-        ? new mongoose.Types.ObjectId(p.earnedBy)
-        : null
+      takenBy: new mongoose.Types.ObjectId(p.player),
+      earnedBy: null
     }));
 
-    const preparedCards = cards.map(c => ({
+    match.events.missedPenalties.away = (missedPenalties.away || []).map(p => ({
+      minute: p.minute,
+      takenBy: new mongoose.Types.ObjectId(p.player),
+      earnedBy: null
+    }));
+
+    /* =========================
+       CARDS
+    ========================= */
+    match.events.cards.home = (cards.home || []).map(c => ({
       player: new mongoose.Types.ObjectId(c.player),
-      minute: c.minute,
-      type: c.type
+      type: c.type,
+      minute: c.minute
     }));
 
-    const validationError = validateMatchEvents({
-      lineup,
-      subs: preparedSubs,
-      goals: preparedGoals,
-      missedPenalties: preparedMissed,
-      cards: preparedCards,
-      motm,
-      score: score?.[team]
-    });
+    match.events.cards.away = (cards.away || []).map(c => ({
+      player: new mongoose.Types.ObjectId(c.player),
+      type: c.type,
+      minute: c.minute
+    }));
 
-    if (validationError)
-      return res.status(400).json({ message: validationError });
+    /* =========================
+       MOTM
+    ========================= */
+    match.events.motm = motm
+      ? new mongoose.Types.ObjectId(motm)
+      : null;
 
-    match.substitutions[team] = preparedSubs;
-    match.events.goals[team] = preparedGoals;
-    match.events.missedPenalties[team] = preparedMissed;
-    match.events.cards[team] = preparedCards;
-
-    if (score) {
-      match.score.home = score.home;
-      match.score.away = score.away;
-    }
-
-    if (motm)
-      match.events.motm = new mongoose.Types.ObjectId(motm);
+    /* =========================
+       SCORE
+    ========================= */
+    match.score.home = score.home || 0;
+    match.score.away = score.away || 0;
 
     match.status = "finished";
 
     await match.save();
+
+    /* =========================
+       PROCESS MATCH
+    ========================= */
     await processMatch(match._id);
     await updateRating();
     await processMatchdayWinner(match.matchday);
 
+    res.json({ message: "Saved & processed" });
 
-    res.json({ message: "Match result saved" });
-
-  }  catch (err) {
-      console.error(err);
-      res.status(500).json({
-        message: err.message,
-        stack: err.stack
-      });
-    }
-
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: err.message
+    });
+  }
 });
-
 
 export default router;
 

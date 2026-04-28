@@ -1,9 +1,7 @@
 const API_URL = "";
 
 let currentLineup = { home: [], away: [] };
-let bench = { home: [], away: [] };
 let squadFull = { home: [], away: [] };
-
 let selectedMotm = null;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -13,9 +11,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultsMatchday = document.getElementById("resultsMatchday");
   const resultsMatch = document.getElementById("resultsMatch");
 
-  const homeTeamName = document.getElementById("homeTeamName");
-  const awayTeamName = document.getElementById("awayTeamName");
-
   const homeScore = document.getElementById("homeScore");
   const awayScore = document.getElementById("awayScore");
 
@@ -23,14 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentMatchId = null;
 
-  if (!token) {
-    window.location.href = "/index.html";
-    return;
-  }
-
-  // =========================
   // MATCHDAY
-  // =========================
   for (let i = 1; i <= 38; i++) {
     const opt = document.createElement("option");
     opt.value = i;
@@ -38,15 +26,13 @@ document.addEventListener("DOMContentLoaded", () => {
     resultsMatchday.appendChild(opt);
   }
 
-  // =========================
   // LOAD MATCHES
-  // =========================
   resultsMatchday.addEventListener("change", async () => {
 
-    const res = await fetch(`/matches?matchday=${resultsMatchday.value}`);
-    const matches = await res.json();
+    const matches = await fetch(`/matches?matchday=${resultsMatchday.value}`)
+      .then(r => r.json());
 
-    resultsMatch.innerHTML = `<option value="">Select match</option>`;
+    resultsMatch.innerHTML = `<option value="">Select</option>`;
 
     matches.forEach(m => {
       const opt = document.createElement("option");
@@ -58,9 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // =========================
   // SELECT MATCH
-  // =========================
   resultsMatch.addEventListener("change", async () => {
 
     const selected = resultsMatch.options[resultsMatch.selectedIndex];
@@ -68,84 +52,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
     currentMatchId = selected.value;
 
-    homeTeamName.textContent = selected.dataset.home;
-    awayTeamName.textContent = selected.dataset.away;
-
     const match = await fetch(`/matches/${currentMatchId}`).then(r => r.json());
 
     currentLineup.home = match.lineups.home;
     currentLineup.away = match.lineups.away;
 
-    renderLineup(currentLineup.home, "homeLineup");
-    renderLineup(currentLineup.away, "awayLineup");
+    renderLineup("home");
+    renderLineup("away");
 
-    const [homeSquad, awaySquad] = await Promise.all([
+    const [home, away] = await Promise.all([
       fetch(`/leagues/team/${match.homeTeam}`).then(r => r.json()),
       fetch(`/leagues/team/${match.awayTeam}`).then(r => r.json())
     ]);
 
-    squadFull.home = homeSquad;
-    squadFull.away = awaySquad;
+    squadFull.home = home;
+    squadFull.away = away;
 
-    renderSubstitutions("home");
-    renderSubstitutions("away");
+    renderSubs("home");
+    renderSubs("away");
 
-    renderMotmSelect();
+    renderMotm();
   });
 
-  // =========================
-  // LINEUP (READ ONLY)
-  // =========================
-  function renderLineup(players, containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = "";
-
-    players.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "col-md-3";
-
-      div.innerHTML = `
-        <div class="card p-2 text-center">
-          ${p.player?.name}
-        </div>
-      `;
-
-      container.appendChild(div);
-    });
+  // LINEUP
+  function renderLineup(team) {
+    const container = document.getElementById(team + "Lineup");
+    container.innerHTML = currentLineup[team]
+      .map(p => `<div>${p.player.name}</div>`)
+      .join("");
   }
 
-  // =========================
-  // SUBSTITUTIONS
-  // =========================
-  function renderSubstitutions(team) {
-
+  // SUBS
+  function renderSubs(team) {
     const container = document.getElementById(team + "Subs");
     container.innerHTML = "";
-
-    const lineup = currentLineup[team];
-    const squad = squadFull[team];
 
     for (let i = 0; i < 5; i++) {
 
       const div = document.createElement("div");
-      div.className = "card p-2 mb-2";
 
       div.innerHTML = `
-        <select class="form-select mb-1 out">
-          <option value="">OUT</option>
-          ${lineup.map(p =>
+        <select class="out">
+          <option></option>
+          ${currentLineup[team].map(p =>
             `<option value="${p.player._id}">${p.player.name}</option>`
           ).join("")}
         </select>
 
-        <select class="form-select mb-1 in">
-          <option value="">IN</option>
-          ${squad.map(p =>
+        →
+        <select class="in">
+          <option></option>
+          ${squadFull[team].map(p =>
             `<option value="${p._id}">${p.name}</option>`
           ).join("")}
         </select>
 
-        <input type="number" class="form-control minute" placeholder="Minute">
+        <input class="minute" type="number" placeholder="min">
       `;
 
       container.appendChild(div);
@@ -153,43 +115,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function collectSubs(team) {
-
-    const cards = document
-      .getElementById(team + "Subs")
-      .querySelectorAll(".card");
-
-    const subs = [];
-    const used = new Set();
-
-    for (let c of cards) {
-
-      const out = c.querySelector(".out").value;
-      const inp = c.querySelector(".in").value;
-      const minute = Number(c.querySelector(".minute").value);
-
-      if (out && inp && minute) {
-
-        if (used.has(out)) {
-          alert("Duplicate substitution");
-          return null;
-        }
-
-        used.add(out);
-
-        subs.push({
-          playerOut: out,
-          playerIn: inp,
-          minute
-        });
-      }
-    }
-
-    return subs;
+    return [...document.querySelectorAll(`#${team}Subs div`)]
+      .map(d => ({
+        playerOut: d.querySelector(".out").value,
+        playerIn: d.querySelector(".in").value,
+        minute: Number(d.querySelector(".minute").value)
+      }))
+      .filter(s => s.playerOut && s.playerIn && s.minute);
   }
 
-  // =========================
   // GOALS
-  // =========================
   function renderGoals(team, count) {
 
     const container = document.getElementById(team + "Goals");
@@ -198,32 +133,30 @@ document.addEventListener("DOMContentLoaded", () => {
     for (let i = 0; i < count; i++) {
 
       const div = document.createElement("div");
-      div.className = "card p-2 mb-2";
+      div.className = "goal-card";
 
       div.innerHTML = `
-        <b>Goal ${i + 1}</b>
-
-        <select class="form-select scorer">
+        <select class="scorer">
           ${squadFull[team].map(p =>
             `<option value="${p._id}">${p.name}</option>`
           ).join("")}
         </select>
 
-        <select class="form-select assist">
-          <option value="">No assist</option>
+        <select class="assist">
+          <option value="">no assist</option>
           ${squadFull[team].map(p =>
             `<option value="${p._id}">${p.name}</option>`
           ).join("")}
         </select>
 
-        <input type="number" class="form-control minute" placeholder="Minute">
+        <input class="minute" type="number">
 
         <label>
-          <input type="checkbox" class="penalty"> Penalty
+          <input type="checkbox" class="penalty"> P
         </label>
 
-        <div class="earned mt-1" style="display:none;">
-          <select class="form-select earnedBy">
+        <div class="earned" style="display:none">
+          <select class="earnedBy">
             ${squadFull[team].map(p =>
               `<option value="${p._id}">${p.name}</option>`
             ).join("")}
@@ -235,73 +168,60 @@ document.addEventListener("DOMContentLoaded", () => {
       const earned = div.querySelector(".earned");
       const assist = div.querySelector(".assist");
 
-      penalty.addEventListener("change", () => {
+      penalty.onchange = () => {
         earned.style.display = penalty.checked ? "block" : "none";
         assist.disabled = penalty.checked;
-        if (penalty.checked) assist.value = "";
-      });
+      };
 
       container.appendChild(div);
     }
   }
 
   function collectGoals(team) {
+  return [...document.querySelectorAll(`#${team}Goals .goal-card`)]
+    .map(d => {
 
-    const cards = document
-      .getElementById(team + "Goals")
-      .querySelectorAll(".card");
+      const scorerEl = d.querySelector(".scorer");
+      const minuteEl = d.querySelector(".minute");
 
-    const goals = [];
+      if (!scorerEl || !minuteEl) return null;
 
-    for (let c of cards) {
+      const scorer = scorerEl.value;
+      const assist = d.querySelector(".assist")?.value;
+      const minute = Number(minuteEl.value);
+      const isPenalty = d.querySelector(".penalty")?.checked;
+      const earnedBy = d.querySelector(".earnedBy")?.value;
 
-      const scorer = c.querySelector(".scorer").value;
-      const assist = c.querySelector(".assist").value;
-      const minute = Number(c.querySelector(".minute").value);
-      const penalty = c.querySelector(".penalty").checked;
-      const earnedBy = c.querySelector(".earnedBy")?.value;
-
-      if (!scorer || !minute) {
-        alert("Goal invalid");
-        return null;
-      }
+      if (!scorer || !minute) return null;
 
       if (assist && assist === scorer) {
-        alert("Scorer cannot assist himself");
+        alert("assist = scorer");
         return null;
       }
 
-      goals.push({
+      return {
         scorer,
-        assist: penalty ? null : assist || null,
+        assist: isPenalty ? null : assist || null,
         minute,
         penalty: {
-          isPenalty: penalty,
-          penaltyEarnedBy: penalty ? earnedBy || null : null
+          isPenalty,
+          earnedBy: isPenalty ? earnedBy || null : null
         }
-      });
-    }
+      };
+    })
+    .filter(Boolean);
+}
 
-    return goals;
-  }
+  homeScore.oninput = () =>
+    renderGoals("home", Number(homeScore.value || 0));
 
-  homeScore.addEventListener("input", () =>
-    renderGoals("home", Number(homeScore.value || 0))
-  );
+  awayScore.oninput = () =>
+    renderGoals("away", Number(awayScore.value || 0));
 
-  awayScore.addEventListener("input", () =>
-    renderGoals("away", Number(awayScore.value || 0))
-  );
-
-  // =========================
-  // MISSED PENALTY
-  // =========================
+  // MISSED PENALTIES
   window.addMissedPenalty = function(team) {
 
-    const container = document.getElementById(team + "MissedPenalties");
-
     const div = document.createElement("div");
-    div.className = "card p-2 mb-2";
 
     div.innerHTML = `
       <select class="player">
@@ -309,31 +229,25 @@ document.addEventListener("DOMContentLoaded", () => {
           `<option value="${p._id}">${p.name}</option>`
         ).join("")}
       </select>
-      <input type="number" class="minute" placeholder="Minute">
+
+      <input class="minute" type="number">
     `;
 
-    container.appendChild(div);
+    document.getElementById(team + "MissedPenalties").appendChild(div);
   };
 
   function collectMissed(team) {
-    return [...document
-      .getElementById(team + "MissedPenalties")
-      .querySelectorAll(".card")
-    ].map(c => ({
-      player: c.querySelector(".player").value,
-      minute: Number(c.querySelector(".minute").value)
-    }));
+    return [...document.querySelectorAll(`#${team}MissedPenalties div`)]
+      .map(d => ({
+        player: d.querySelector(".player").value,
+        minute: Number(d.querySelector(".minute").value)
+      }));
   }
 
-  // =========================
   // CARDS
-  // =========================
   window.addCard = function(team) {
 
-    const container = document.getElementById(team + "Cards");
-
     const div = document.createElement("div");
-    div.className = "card p-2 mb-2";
 
     div.innerHTML = `
       <select class="player">
@@ -343,38 +257,34 @@ document.addEventListener("DOMContentLoaded", () => {
       </select>
 
       <select class="type">
-        <option value="yellow">Yellow</option>
-        <option value="red">Red</option>
+        <option value="yellow">Y</option>
+        <option value="red">R</option>
       </select>
 
-      <input type="number" class="minute" placeholder="Minute">
+      <input class="minute" type="number">
     `;
 
-    container.appendChild(div);
+    document.getElementById(team + "Cards").appendChild(div);
   };
 
   function collectCards(team) {
-    return [...document
-      .getElementById(team + "Cards")
-      .querySelectorAll(".card")
-    ].map(c => ({
-      player: c.querySelector(".player").value,
-      type: c.querySelector(".type").value,
-      minute: Number(c.querySelector(".minute").value)
-    }));
+    return [...document.querySelectorAll(`#${team}Cards div`)]
+      .map(d => ({
+        player: d.querySelector(".player").value,
+        type: d.querySelector(".type").value,
+        minute: Number(d.querySelector(".minute").value)
+      }));
   }
 
-  // =========================
   // MOTM
-  // =========================
-  function renderMotmSelect() {
+  function renderMotm() {
 
     const players = [
       ...currentLineup.home.map(p => p.player),
       ...currentLineup.away.map(p => p.player)
     ];
 
-    motmSelect.innerHTML = `<option value="">Select MOTM</option>`;
+    motmSelect.innerHTML = `<option></option>`;
 
     players.forEach(p => {
       const opt = document.createElement("option");
@@ -388,92 +298,50 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // =========================
-  // SAVE RESULT
-  // =========================
+  // SAVE
+  document.getElementById("saveResultBtn").onclick = async () => {
 
-  document.getElementById("saveResultBtn").addEventListener("click", async () => {
+    const payload = {
+      goals: {
+        home: collectGoals("home"),
+        away: collectGoals("away")
+      },
+      substitutions: {
+        home: collectSubs("home"),
+        away: collectSubs("away")
+      },
+      missedPenalties: {
+        home: collectMissed("home"),
+        away: collectMissed("away")
+      },
+      cards: {
+        home: collectCards("home"),
+        away: collectCards("away")
+      },
+      motm: selectedMotm,
+      score: {
+        home: Number(homeScore.value || 0),
+        away: Number(awayScore.value || 0)
+      }
+    };
 
-  const homeGoals = collectGoals("home");
-  const awayGoals = collectGoals("away");
-
-  if (!homeGoals || !awayGoals) return;
-
-  const homeSubs = collectSubs("home");
-  const awaySubs = collectSubs("away");
-
-  const homeMissed = collectMissed("home");
-  const awayMissed = collectMissed("away");
-
-  const homeCards = collectCards("home");
-  const awayCards = collectCards("away");
-
-  const score = {
-    home: Number(homeScore.value || 0),
-    away: Number(awayScore.value || 0)
-  };
-
-  try {
-
-    // HOME
-    const resHome = await fetch(`/admin/matches/${currentMatchId}/result`, {
+    const res = await fetch(`/admin/matches/${currentMatchId}/full`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({
-        team: "home",
-        goals: homeGoals,
-        subs: homeSubs,
-        missed: homeMissed,
-        cards: homeCards,
-        motm: selectedMotm,
-        score
-      })
+      body: JSON.stringify(payload)
     });
 
-    const dataHome = await resHome.json();
+    const data = await res.json();
 
-    if (!resHome.ok) {
-      alert("HOME ERROR: " + dataHome.message);
-      return;
-    }
-
-    // AWAY
-    const resAway = await fetch(`/admin/matches/${currentMatchId}/result`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        team: "away",
-        goals: awayGoals,
-        subs: awaySubs,
-        missed: awayMissed,
-        cards: awayCards,
-        score
-      })
-    });
-
-    const dataAway = await resAway.json();
-
-    if (!resAway.ok) {
-      alert("AWAY ERROR: " + dataAway.message);
+    if (!res.ok) {
+      alert(data.message);
       return;
     }
 
     alert("Saved!");
-
-  } catch (err) {
-    console.error(err);
-    alert("Server error");
-  }
+  };
 
 });
-
-
-});
-
-

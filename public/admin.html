@@ -236,122 +236,74 @@
 </div>
 
     <!-- RESULTS -->
+    <!-- RESULTS -->
     <div class="tab-pane fade" id="resultsTab">
 
-      <!-- SELECT MATCH -->
       <div class="card mb-3 p-3">
-        <div class="row g-2">
 
+        <div class="row g-2">
           <div class="col-md-3">
-            <label>Matchday</label>
             <select id="resultsMatchday" class="form-select form-select-sm"></select>
           </div>
 
           <div class="col-md-5">
-            <label>Match</label>
             <select id="resultsMatch" class="form-select form-select-sm"></select>
           </div>
+        </div>
 
-          <div class="d-flex gap-1 mb-1">
-            <select class="form-select form-select-sm out"></select>
-            <span>→</span>
-            <select class="form-select form-select-sm in"></select>
-            <input class="form-control form-control-sm" style="width:60px" placeholder="min">
+        <hr>
+
+        <h6>Home Lineup</h6>
+        <div id="homeLineup" class="pitch mb-2"></div>
+
+        <h6>Away Lineup</h6>
+        <div id="awayLineup" class="pitch mb-2"></div>
+
+        <h6>Substitutions</h6>
+        <div id="homeSubs"></div>
+        <div id="awaySubs" class="mt-2"></div>
+
+        <hr>
+
+        <!-- SCORE -->
+        <div class="row text-center align-items-center mb-3">
+          <div class="col">${""}</div>
+          <div class="col">
+            <input id="homeScore" class="form-control" type="number">
           </div>
+          <div class="col">:</div>
+          <div class="col">
+            <input id="awayScore" class="form-control" type="number">
+          </div>
+        </div>
 
-          
-
-          <h6>Home Lineup</h6>
-          <div id="homeLineup" class="row mb-3"></div>
-
-          <h6>Away Lineup</h6>
-          <div id="awayLineup" class="row mb-3"></div>
-
-          <h6>Home Substitutions</h6>
-          <div id="homeSubs" class="row"></div>
-
-          <h6 class="mt-3">Away Substitutions</h6>
-          <div id="awaySubs" class="row"></div>
-
-          <!-- EVENTS -->
-
-      <div class="card p-3 mt-3">
-
-        <h5>Match Events</h5>
-
-        <!-- GOALS -->
-        <h6 class="mt-3">Home Goals</h6>
+        <!-- EVENTS -->
+        <h6>Goals</h6>
         <div id="homeGoals"></div>
-        
-
-        <h6>Away Goals</h6>
         <div id="awayGoals"></div>
-       
 
-        <!-- MISSED PENALTIES -->
         <h6 class="mt-3">Missed Penalties</h6>
         <div id="homeMissedPenalties"></div>
-        <button class="btn btn-sm btn-outline-warning mb-2" onclick="addMissedPenalty('home')">
-          + Add Missed Penalty
-        </button>
-        <div id="awayMissedPenalties"></div>
-        <button class="btn btn-sm btn-outline-warning mb-2" onclick="addMissedPenalty('away')">
-          + Add Missed Penalty
-        </button>
+        <button onclick="addMissedPenalty('home')" class="btn btn-sm btn-warning">+ Home</button>
 
-        <!-- CARDS -->
+        <div id="awayMissedPenalties"></div>
+        <button onclick="addMissedPenalty('away')" class="btn btn-sm btn-warning">+ Away</button>
+
         <h6 class="mt-3">Cards</h6>
         <div id="homeCards"></div>
-        <button class="btn btn-sm btn-outline-danger mb-2" onclick="addCard('home')">
-          + Add Card
-        </button>
+        <button onclick="addCard('home')" class="btn btn-sm btn-danger">+ Home</button>
 
         <div id="awayCards"></div>
-        <button class="btn btn-sm btn-outline-danger mb-2" onclick="addCard('away')">
-          + Add Card
-        </button>
+        <button onclick="addCard('away')" class="btn btn-sm btn-danger">+ Away</button>
 
-        <!-- MOTM -->
-        <h6 class="mt-3">Man of the Match</h6>
-        <select id="motmSelect" class="form-select form-select-sm"></select>
+        <h6 class="mt-3">MOTM</h6>
+        <select id="motmSelect" class="form-select"></select>
 
-      </div>
-        </div>
-      </div>
-
-      <!-- SCORE INPUT -->
-      <div class="card p-3">
-
-        <div class="row g-2 align-items-center">
-
-          <div class="col-md-4 text-end">
-            <strong id="homeTeamName">Home</strong>
-          </div>
-
-          <div class="col-md-2">
-            <input type="number" id="homeScore" class="form-control form-control-sm" placeholder="0">
-          </div>
-
-          <div class="col-md-2 text-center">
-            :
-          </div>
-
-          <div class="col-md-2">
-            <input type="number" id="awayScore" class="form-control form-control-sm" placeholder="0">
-          </div>
-
-          <div class="col-md-2">
-            <strong id="awayTeamName">Away</strong>
-          </div>
-
-        </div>
-
-        <button id="saveResultBtn" class="btn btn-primary btn-sm mt-3">
-          Save Result
+        <button id="saveResultBtn" class="btn btn-primary mt-3">
+          Save
         </button>
 
       </div>
-
     </div>
 
   </div>
