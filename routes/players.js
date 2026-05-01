@@ -30,4 +30,29 @@ router.get("/", async (req, res) => {
   }
 });
 
+/* ===========================================
+   GET /players/team/:team
+   Get ALL players by team (🔥 ИСПРАВЛЕНО)
+=========================================== */
+router.get("/team/:team", async (req, res) => {
+  try {
+    const teamName = req.params.team;
+
+    console.log("GET PLAYERS BY TEAM:", teamName);
+
+    const players = await Player.find({ team: teamName });
+
+    res.json({
+      count: players.length,
+      players
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to load team players",
+      error: err.message
+    });
+  }
+});
+
 export default router;

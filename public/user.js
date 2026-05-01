@@ -2,6 +2,8 @@ const token = localStorage.getItem("token");
 
 if (!token) window.location.href = "/index.html";
 
+let selectedTeam = null;
+
 let squad = [];
 let lineup = new Array(11).fill(null);
 let subs = new Array(5).fill(null);
@@ -40,6 +42,8 @@ return [...lineup,...subs].filter(Boolean);
 DASHBOARD
 ========================= */
 
+
+
 async function loadDashboard(){
 
 const res = await fetch("/user/dashboard",{
@@ -49,7 +53,8 @@ headers:{Authorization:"Bearer "+token}
 const data = await res.json();
 
 document.getElementById("userInfo").innerText =
-data.user.username+" | "+(data.user.selectedTeam || "no team");
+        data.user.username + " | " + (data.user.selectedTeam || "no team");
+    selectedTeam = data.user.selectedTeam;
 
 /* USER RATING */
 
@@ -92,7 +97,7 @@ LOAD SQUAD
 
 async function loadSquad(team){
 
-const res = await fetch("/user/squad/"+team,{
+const res = await fetch("/players/team/"+team,{
 headers:{Authorization:"Bearer "+token}
 });
 
@@ -289,25 +294,169 @@ div.appendChild(slot);
 GOALS
 ========================= */
 
+// function generateGoals(){
+
+// let home=parseInt(homeScore.value||0);
+// let away=parseInt(awayScore.value||0);
+
+// if(home>15||away>15){
+// alert("Max goals = 15");
+// return;
+// }
+
+
+// goalInputs.innerHTML="";
+
+// for(let i=0;i<home;i++){
+
+// const block=document.createElement("div");
+// block.className="border p-2 mb-2 goal-block";
+
+// block.innerHTML=`
+// <div><b>Goal ${i+1}</b></div>
+
+// <div>
+// Scorer:
+// <button class="btn btn-sm btn-outline-primary scorer-btn">
+// select
+// </button>
+// </div>
+
+// <div>
+// Assist:
+// <button class="btn btn-sm btn-outline-secondary assist-btn">
+// select
+// </button>
+// </div>
+
+// <div class="mt-1">
+// <label>
+// <input type="checkbox" class="penalty-checkbox">
+//  penalty
+// </label>
+// </div>
+
+// <div class="penalty-earned-wrapper mt-1" style="display:none;">
+// Penalty earned:
+// <button class="btn btn-sm btn-outline-warning earned-btn">
+// select
+// </button>
+// </div>
+// `;
+
+// goalInputs.appendChild(block);
+
+    // }
+    
+
+// goalInputs.innerHTML="";
+
+// /* HOME GOALS */
+// for(let i=0;i<home;i++){
+//     createGoalBlock("home", i+1);
+// }
+
+// /* AWAY GOALS */
+// for(let i=0;i<away;i++){
+//     createGoalBlock("away", i+1);
+//     }
+    
+// function createGoalBlock(team, index){
+
+// const block=document.createElement("div");
+// block.className="border p-2 mb-2 goal-block";
+
+// block.innerHTML=`
+// <div><b>${team.toUpperCase()} Goal ${index}</b></div>
+
+// <div>
+// Scorer:
+// <button class="btn btn-sm btn-outline-primary scorer-btn">
+// select
+// </button>
+// </div>
+
+// <div>
+// Assist:
+// <button class="btn btn-sm btn-outline-secondary assist-btn">
+// select
+// </button>
+// </div>
+
+// <div class="mt-1">
+// <label>
+// <input type="checkbox" class="penalty-checkbox">
+//  penalty
+// </label>
+// </div>
+
+// <div class="penalty-earned-wrapper mt-1" style="display:none;">
+// Penalty earned:
+// <button class="btn btn-sm btn-outline-warning earned-btn">
+// select
+// </button>
+// </div>
+// `;
+
+// goalInputs.appendChild(block);
+// }
+
+// attachGoalListeners();
+
+// }
+
 function generateGoals(){
 
-let home=parseInt(homeScore.value||0);
-let away=parseInt(awayScore.value||0);
+let home = parseInt(homeScore.value || 0);
+let away = parseInt(awayScore.value || 0);
 
-if(home>15||away>15){
-alert("Max goals = 15");
-return;
+if(home > 15 || away > 15){
+    alert("Max goals = 15");
+    return;
 }
 
-goalInputs.innerHTML="";
+goalInputs.innerHTML = "";
 
-for(let i=0;i<home;i++){
+/* =========================
+   DEFINE TEAM SIDE
+========================= */
 
-const block=document.createElement("div");
-block.className="border p-2 mb-2 goal-block";
+let teamSide = null;
 
-block.innerHTML=`
-<div><b>Goal ${i+1}</b></div>
+if (selectedTeam === currentMatch.homeTeam) {
+    teamSide = "home";
+} else if (selectedTeam === currentMatch.awayTeam) {
+    teamSide = "away";
+} else {
+    alert("Your team is not in this match");
+    return;
+}
+
+/* =========================
+   GOALS COUNT ONLY FOR USER TEAM
+========================= */
+
+let goalsCount = teamSide === "home" ? home : away;
+
+/* =========================
+   GENERATE ONLY ONE SIDE
+========================= */
+
+for(let i = 0; i < goalsCount; i++){
+    createGoalBlock(teamSide, i + 1);
+}
+
+attachGoalListeners();
+}
+
+
+function createGoalBlock(team, index){
+
+const block = document.createElement("div");
+block.className = "border p-2 mb-2 goal-block";
+
+block.innerHTML = `
+<div><b>${team.toUpperCase()} Goal ${index}</b></div>
 
 <div>
 Scorer:
@@ -339,11 +488,6 @@ select
 `;
 
 goalInputs.appendChild(block);
-
-}
-
-attachGoalListeners();
-
 }
 
 function attachGoalListeners(){
@@ -481,7 +625,22 @@ penaltyEarned: penalty ? earned || null : null
 });
 
 /* =========================
-PLAYERS WITH POSITIONS
+TEAM SIDE
+========================= */
+
+let teamSide = null;
+
+if (selectedTeam === currentMatch.homeTeam) {
+    teamSide = "home";
+} else if (selectedTeam === currentMatch.awayTeam) {
+    teamSide = "away";
+} else {
+    alert("Your team is not in this match");
+    return;
+}
+
+/* =========================
+PLAYERS
 ========================= */
 
 const players = lineup.map((p,i)=>{
@@ -493,7 +652,7 @@ let position="MID";
 if(i===0) position="GK";
 else if(i>=1 && i<=4) position="DEF";
 else if(i>=5 && i<=8) position="MID";
-else if(i>=9) position="ATT";
+else if(i>=9) position="FW";
 
 return {
 playerId:p._id,
@@ -501,7 +660,6 @@ position
 };
 
 }).filter(Boolean);
-
 
 /* =========================
 SUBS
@@ -513,13 +671,11 @@ const subsPayload = subs
 playerId:p._id
 }));
 
-
 return {
 
-team:"home",
+team: teamSide, // ✅ ВАЖНО
 
-players: players,
-
+players,
 subs: subsPayload,
 
 predictedScore:{
@@ -528,16 +684,13 @@ away:Number(awayScore.value||0)
 },
 
 goals,
-
 motm: motm?._id || null
 
 };
 
 }
 
-/* =========================
-SUBMIT (единственный)
-========================= */
+
 
 async function submitPrediction() {
     
