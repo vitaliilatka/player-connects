@@ -291,9 +291,6 @@ router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
 router.post("/:id/full", authMiddleware("admin"), async (req, res) => {
   const { id } = req.params;
 
-  console.log("BODY:");
-  console.log(JSON.stringify(req.body, null, 2));
-
   const {
     goals,
     substitutions,
@@ -401,12 +398,6 @@ router.post("/:id/full", authMiddleware("admin"), async (req, res) => {
 
     await match.save();
 
-    const saved = await Match.findById(id);
-    console.log("SAVED GOALS HOME:", saved.events.goals.home);
-    console.log("SAVED FULL MATCH:", saved.events);
-
-    await processMatch(match._id);
-
     /* =========================
        PROCESS MATCH
     ========================= */
@@ -425,4 +416,3 @@ router.post("/:id/full", authMiddleware("admin"), async (req, res) => {
 });
 
 export default router;
-

@@ -10,7 +10,7 @@ const router = express.Router();
 // 🔥 GET players by team name
 router.get("/team/:teamName", async (req, res) => {
   try {
-    const teamName = req.params.teamName;
+    const teamName = req.params.teamName.toLowerCase();
 
     const players = await Player.find({ team: teamName });
 

@@ -65,8 +65,12 @@ app.use("/leaderboard", leaderboardRoutes);
 app.use("/matches", matchesRouter);
 
 // === MongoDB connection ===
+
+mongoose.connection.on("connected", () => {
+  console.log("📦 DB NAME:", mongoose.connection.name);
+});
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, {dbName: "playersdb"})
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
