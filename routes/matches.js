@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
       filter.matchday = Number(matchday);
     }
 
-    const matches = await Match.find(filter).sort({ date: 1 });
+    const matches = await Match.find(filter).sort({ kickoff: 1 });
 
     res.json(matches);
 

@@ -240,6 +240,42 @@ router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
     if (!match)
       return res.status(404).json({ message: "Match not found" });
 
+    const err = validateMatchEvents({
+      lineup: [...match.lineups.home, ...match.lineups.away],
+
+      subs: [
+        ...(substitutions.home || []),
+        ...(substitutions.away || [])
+      ],
+
+      goals: [
+        ...(goals.home || []),
+        ...(goals.away || [])
+      ],
+
+      missedPenalties: [
+        ...(missedPenalties.home || []),
+        ...(missedPenalties.away || [])
+      ],
+
+      cards: [
+        ...(cards.home || []),
+        ...(cards.away || [])
+      ],
+
+      motm,
+
+      score:
+        Number(score.home || 0) +
+        Number(score.away || 0)
+    });
+
+    if (err) {
+      return res.status(400).json({
+        message: err
+      });
+    }
+
     // 🔥 ВАЖНО: берём игроков из Player, НЕ TeamSquad
     const homePlayersDb = await Player.find({ team: match.homeTeam });
     const awayPlayersDb = await Player.find({ team: match.awayTeam });

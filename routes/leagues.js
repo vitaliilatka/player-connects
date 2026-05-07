@@ -7,23 +7,29 @@ const router = express.Router();
 
 
 
-// 🔥 GET players by team name
-router.get("/team/:teamName", async (req, res) => {
-  try {
-    const teamName = req.params.teamName.toLowerCase();
+// // 🔥 GET players by team name
+// router.get("/team/:teamName", async (req, res) => {
+//   try {
 
-    const players = await Player.find({ team: teamName });
+//     const teamName = req.params.teamName;
 
-    if (!players.length) {
-      return res.status(404).json({ message: "No players found for this team" });
-    }
+//     const players = await Player.find({
+//       team: { $regex: `^${teamName}$`, $options: "i" }
+//     });
+//     // const teamName = req.params.teamName.toLowerCase();
 
-    res.json(players);
+//     // const players = await Player.find({ team: teamName });
 
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+//     if (!players.length) {
+//       return res.status(404).json({ message: "No players found for this team" });
+//     }
+
+//     res.json(players);
+
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 
 /* ===========================================
