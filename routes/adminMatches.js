@@ -240,41 +240,41 @@ router.post("/:matchId/lineup", authMiddleware("admin"), async (req, res) => {
     if (!match)
       return res.status(404).json({ message: "Match not found" });
 
-    const err = validateMatchEvents({
-      lineup: [...match.lineups.home, ...match.lineups.away],
+    // const err = validateMatchEvents({
+    //   lineup: [...match.lineups.home, ...match.lineups.away],
 
-      subs: [
-        ...(substitutions.home || []),
-        ...(substitutions.away || [])
-      ],
+    //   subs: [
+    //     ...(substitutions.home || []),
+    //     ...(substitutions.away || [])
+    //   ],
 
-      goals: [
-        ...(goals.home || []),
-        ...(goals.away || [])
-      ],
+    //   goals: [
+    //     ...(goals.home || []),
+    //     ...(goals.away || [])
+    //   ],
 
-      missedPenalties: [
-        ...(missedPenalties.home || []),
-        ...(missedPenalties.away || [])
-      ],
+    //   missedPenalties: [
+    //     ...(missedPenalties.home || []),
+    //     ...(missedPenalties.away || [])
+    //   ],
 
-      cards: [
-        ...(cards.home || []),
-        ...(cards.away || [])
-      ],
+    //   cards: [
+    //     ...(cards.home || []),
+    //     ...(cards.away || [])
+    //   ],
 
-      motm,
+    //   motm,
 
-      score:
-        Number(score.home || 0) +
-        Number(score.away || 0)
-    });
+    //   score:
+    //     Number(score.home || 0) +
+    //     Number(score.away || 0)
+    // });
 
-    if (err) {
-      return res.status(400).json({
-        message: err
-      });
-    }
+    // if (err) {
+    //   return res.status(400).json({
+    //     message: err
+    //   });
+    // }
 
     // 🔥 ВАЖНО: берём игроков из Player, НЕ TeamSquad
     const homePlayersDb = await Player.find({ team: match.homeTeam });

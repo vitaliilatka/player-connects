@@ -54,7 +54,8 @@ document.addEventListener("DOMContentLoaded", () => {
 ========================= */
 
 const playersLeagueSelect = document.getElementById("leagueSelect");
-const playersList = document.getElementById("playersList");
+  const playersList = document.getElementById("playersList");
+  console.log(playersList);
 
 async function loadPlayerLeagues() {
 
