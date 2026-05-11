@@ -50,6 +50,91 @@ document.addEventListener("DOMContentLoaded", () => {
   loadTeams();
 
   /* =========================
+   PLAYERS TAB
+========================= */
+
+const playersLeagueSelect = document.getElementById("leagueSelect");
+const playersList = document.getElementById("playersList");
+
+async function loadPlayerLeagues() {
+
+  const res = await fetch("/admin/leagues", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  const leagues = await res.json();
+
+  playersLeagueSelect.innerHTML = `<option value="">Select team</option>`;
+
+  leagues.forEach(l => {
+    playersLeagueSelect.appendChild(
+      new Option(l.name, l._id)
+    );
+  });
+}
+
+playersLeagueSelect.onchange = async () => {
+
+  if (!playersLeagueSelect.value) return;
+
+  const res = await fetch(
+    `/admin/players/${playersLeagueSelect.value}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+
+  const players = await res.json();
+
+  playersList.innerHTML = "";
+
+  players.forEach(p => {
+
+    const div = document.createElement("div");
+
+    div.className =
+      "d-flex justify-content-between align-items-center border p-2 mb-2";
+
+    div.innerHTML = `
+      <div>
+        ${p.name} (${p.position})
+      </div>
+
+      <button class="btn btn-danger btn-sm">
+        Delete
+      </button>
+    `;
+
+    div.querySelector("button").onclick = async () => {
+
+      if (!confirm("Delete player?")) return;
+
+      const delRes = await fetch(`/admin/players/${p._id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await delRes.json();
+
+      if (!delRes.ok)
+        return alert(data.message);
+
+      div.remove();
+    };
+
+    playersList.appendChild(div);
+  });
+};
+
+loadPlayerLeagues();
+
+  /* =========================
      CREATE MATCH (🔥 FIX)
   ========================= */
   document.getElementById("createMatchForm").onsubmit = async (e) => {
@@ -144,12 +229,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const home = [...document.querySelectorAll("#homePlayers select")]
       .map(s => s.value)
       .filter(Boolean)
-      .map(id => ({ playerId: id, position: "MID" }));
+      .map((id, index) => ({
+        playerId: id,
+        position: index === 0 ? "GK" : "MID"
+      }));
 
     const away = [...document.querySelectorAll("#awayPlayers select")]
       .map(s => s.value)
       .filter(Boolean)
-      .map(id => ({ playerId: id, position: "MID" }));
+      .map((id, index) => ({
+        playerId: id,
+        position: index === 0 ? "GK" : "MID"
+      }));
 
     const res = await fetch(`/admin/matches/${currentMatchId}/lineup`, {
       method: "POST",
@@ -504,20 +595,25 @@ function collectMissed(team) {
 function collectCards(team) {
 
   return [...document.querySelectorAll(
-    `#${team}Cards div`
+    `#${team}Cards > div`
   )]
-    .map(d => ({
-      player:
-        d.querySelector(".player").value,
+    .map(d => {
 
-      type:
-        d.querySelector(".type").value,
+      const player = d.querySelector(".player");
+      const type = d.querySelector(".type");
+      const minute = d.querySelector(".minute");
 
-      minute:
-        Number(d.querySelector(".minute").value)
-    }))
-    .filter(c => c.player && c.minute);
-  }
+      if (!player || !type || !minute)
+        return null;
+
+      return {
+        player: player.value,
+        type: type.value,
+        minute: Number(minute.value)
+      };
+    })
+    .filter(c => c && c.player && c.minute);
+}
   
 
 
