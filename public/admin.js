@@ -74,9 +74,11 @@ async function loadPlayerLeagues() {
       new Option(l.name, l._id)
     );
   });
-}
+  }
+  
+  playersLeagueSelect.onchange = async () => {
 
-playersLeagueSelect.onchange = async () => {
+  console.log("CHANGE WORKS");
 
   if (!playersLeagueSelect.value) return;
 
@@ -89,11 +91,17 @@ playersLeagueSelect.onchange = async () => {
     }
   );
 
+  console.log("FETCH DONE");
+
   const players = await res.json();
+
+  console.log(players);
 
   playersList.innerHTML = "";
 
   players.forEach(p => {
+
+    console.log("PLAYER:", p.name);
 
     const div = document.createElement("div");
 
@@ -110,28 +118,70 @@ playersLeagueSelect.onchange = async () => {
       </button>
     `;
 
-    div.querySelector("button").onclick = async () => {
-
-      if (!confirm("Delete player?")) return;
-
-      const delRes = await fetch(`/admin/players/${p._id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      const data = await delRes.json();
-
-      if (!delRes.ok)
-        return alert(data.message);
-
-      div.remove();
-    };
+    console.log(div);
 
     playersList.appendChild(div);
+
+    console.log("APPENDED");
   });
 };
+
+// playersLeagueSelect.onchange = async () => {
+
+//   if (!playersLeagueSelect.value) return;
+
+//   const res = await fetch(
+//     `/admin/players/${playersLeagueSelect.value}`,
+//     {
+//       headers: {
+//         Authorization: `Bearer ${token}`
+//       }
+//     }
+//   );
+
+//   const players = await res.json();
+
+//   playersList.innerHTML = "";
+
+//   players.forEach(p => {
+
+//     const div = document.createElement("div");
+
+//     div.className =
+//       "d-flex justify-content-between align-items-center border p-2 mb-2";
+
+//     div.innerHTML = `
+//       <div>
+//         ${p.name} (${p.position})
+//       </div>
+
+//       <button class="btn btn-danger btn-sm">
+//         Delete
+//       </button>
+//     `;
+
+//     div.querySelector("button").onclick = async () => {
+
+//       if (!confirm("Delete player?")) return;
+
+//       const delRes = await fetch(`/admin/players/${p._id}`, {
+//         method: "DELETE",
+//         headers: {
+//           Authorization: `Bearer ${token}`
+//         }
+//       });
+
+//       const data = await delRes.json();
+
+//       if (!delRes.ok)
+//         return alert(data.message);
+
+//       div.remove();
+//     };
+
+//     playersList.appendChild(div);
+//   });
+// };
 
 loadPlayerLeagues();
 
