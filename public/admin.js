@@ -267,7 +267,11 @@ loadPlayerLeagues();
       div.innerHTML = `
         <select class="form-select form-select-sm">
           <option></option>
-          ${players.map(p => `<option value="${p._id}">${p.name}</option>`).join("")}
+          ${players.map(p => `<option value="${p._id}"
+            data-position="${p.position}"
+            >
+              ${p.name} (${p.position})
+        </option>`).join("")}
         </select>
       `;
 
@@ -278,20 +282,34 @@ loadPlayerLeagues();
   document.getElementById("saveLineupBtn").onclick = async () => {
 
     const home = [...document.querySelectorAll("#homePlayers select")]
-      .map(s => s.value)
-      .filter(Boolean)
-      .map((id, index) => ({
-        playerId: id,
-        position: index === 0 ? "GK" : "MID"
-      }));
+      .map(select => {
+
+        const option =
+          select.options[select.selectedIndex];
+
+        if (!option.value) return null;
+
+        return {
+          playerId: option.value,
+          position: option.dataset.position
+        };
+      })
+      .filter(Boolean);
 
     const away = [...document.querySelectorAll("#awayPlayers select")]
-      .map(s => s.value)
-      .filter(Boolean)
-      .map((id, index) => ({
-        playerId: id,
-        position: index === 0 ? "GK" : "MID"
-      }));
+      .map(select => {
+
+        const option =
+          select.options[select.selectedIndex];
+
+        if (!option.value) return null;
+
+        return {
+          playerId: option.value,
+          position: option.dataset.position
+        };
+      })
+      .filter(Boolean);
 
     const res = await fetch(`/admin/matches/${currentMatchId}/lineup`, {
       method: "POST",
