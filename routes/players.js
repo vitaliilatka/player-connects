@@ -57,6 +57,8 @@ router.get("/team/:team", async (req, res) => {
   }
 });
 
+export default router;
+
 // router.get("/team/:team", async (req, res) => {
 //   try {
 //     const teamName = req.params.team;
@@ -78,4 +80,4 @@ router.get("/team/:team", async (req, res) => {
 //   }
 // });
 
-export default router;
+
