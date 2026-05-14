@@ -91,7 +91,46 @@ async function loadPlayerLeagues() {
     }
   );
 
-  console.log("FETCH DONE");
+    console.log("FETCH DONE");
+    
+  document.getElementById("addPlayerForm").onsubmit = async (e) => {
+
+      e.preventDefault();
+
+      const form = e.target;
+
+      const formData = new FormData();
+
+      formData.append("name", form.name.value);
+      formData.append("leagueId", playersLeagueSelect.value);
+      // formData.append("team", form.team.value);
+      formData.append("position", form.position.value);
+
+      if (form.image.files[0]) {
+        formData.append("image", form.image.files[0]);
+      }
+
+      const res = await fetch("/admin/players", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return alert(data.message);
+      }
+
+      alert("Player created");
+
+      form.reset();
+
+      playersLeagueSelect.dispatchEvent(new Event("change"));
+    };
+
 
   const players = await res.json();
 
