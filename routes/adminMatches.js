@@ -6,6 +6,7 @@ import Match from "../models/Match.js";
 import TeamSquad from "../models/TeamSquad.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { processMatch } from "../services/matchProcessor.js";
+import { updatePlayerStats } from "../services/playerStatsProcessor.js";
 import { updateRating } from "../services/ratingProcessor.js";
 import Player from "../models/Player.js";
 
@@ -402,9 +403,18 @@ router.post("/:id/full", authMiddleware("admin"), async (req, res) => {
     /* =========================
        PROCESS MATCH
     ========================= */
+
+    await updatePlayerStats(match);
+
     await processMatch(match._id);
+
     await updateRating();
+
     await processMatchdayWinner(match.matchday);
+
+    // await processMatch(match._id);
+    // await updateRating();
+    // await processMatchdayWinner(match.matchday);
 
     res.json({ message: "Saved & processed" });
 

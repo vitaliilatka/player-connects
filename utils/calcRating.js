@@ -10,7 +10,7 @@ export function calcRating(player) {
   const draws = Math.max(0, player.draws || 0);
 
   const starts = Math.max(0, player.starts || 0);
-  const sub_in = Math.max(0, player.sub_in || 0);
+  const sub_in = Math.max(0, player.subs_in || 0);
 
   const goals = Math.max(0, player.goals || 0);
   const assists = Math.max(0, player.assists || 0);

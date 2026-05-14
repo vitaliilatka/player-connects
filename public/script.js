@@ -15,7 +15,13 @@ async function loadPlayersPublic(leagueId) {
       players
         .map(p => ({ ...p, rating: calcRating(p) }))
         .sort((a, b) => b.rating - a.rating)
+        .slice(0, 9)
     );
+    // renderPlayers(
+    //   players
+    //     .map(p => ({ ...p, rating: calcRating(p) }))
+    //     .sort((a, b) => b.rating - a.rating)
+    // );
   } catch (err) {
     console.error(err);
   }

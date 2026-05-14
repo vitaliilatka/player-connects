@@ -343,6 +343,9 @@ loadPlayerLeagues();
     renderLineup("home");
     renderLineup("away");
 
+    homeScore.value = match.score?.home || 0;
+    awayScore.value = match.score?.away || 0;
+
     const [home, away] = await Promise.all([
       fetch(`/players/team/${match.homeTeam}`).then(r => r.json()),
       fetch(`/players/team/${match.awayTeam}`).then(r => r.json())
@@ -353,6 +356,8 @@ loadPlayerLeagues();
 
     renderSubs("home");
     renderSubs("away");
+    renderGoals("home", Number(homeScore.value || 0));
+    renderGoals("away", Number(awayScore.value || 0));
     renderMotm();
   };
 
@@ -521,8 +526,21 @@ loadPlayerLeagues();
   }
 
 
-  homeScore.oninput = () => renderGoals("home", Number(homeScore.value || 0));
-  awayScore.oninput = () => renderGoals("away", Number(awayScore.value || 0));
+  // homeScore.oninput = () => renderGoals("home", Number(homeScore.value || 0));
+  // awayScore.oninput = () => renderGoals("away", Number(awayScore.value || 0));
+
+  function updateGoalsUI() {
+      renderGoals("home", Number(homeScore.value || 0));
+      renderGoals("away", Number(awayScore.value || 0));
+    }
+
+    homeScore.addEventListener("change", updateGoalsUI);
+    awayScore.addEventListener("change", updateGoalsUI);
+
+    homeScore.addEventListener("input", updateGoalsUI);
+  awayScore.addEventListener("input", updateGoalsUI);
+  
+
 
   function renderMotm() {
     const players = [
@@ -677,6 +695,8 @@ function collectCards(team) {
   }
 };
 
+    console.log("GOALS HOME:", collectGoals("home"));
+    console.log("GOALS AWAY:", collectGoals("away"));
 
     const res = await fetch(`/admin/matches/${currentMatchId}/full`, {
       method: "POST",

@@ -38,6 +38,50 @@ function getActivePlayers(){
 return [...lineup,...subs].filter(Boolean);
 }
 
+
+async function loadTeams(){
+  const res = await fetch("/leagues");
+  const data = await res.json();
+
+  const select = document.getElementById("teamSelect");
+
+  select.innerHTML = "";
+
+  data.forEach(l => {
+    const opt = document.createElement("option");
+    opt.value = l.name;
+    opt.innerText = l.name;
+    select.appendChild(opt);
+  });
+}
+
+
+async function saveTeam(){
+
+const team = document.getElementById("teamSelect").value;
+
+const res = await fetch("/user/select-team", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + token
+  },
+  body: JSON.stringify({ team })
+});
+
+const data = await res.json();
+
+if(!res.ok){
+  alert(data.message);
+  return;
+}
+
+location.reload();
+}
+
+
+
+
 /* =========================
 DASHBOARD
 ========================= */
@@ -55,6 +99,12 @@ const data = await res.json();
 document.getElementById("userInfo").innerText =
         data.user.username + " | " + (data.user.selectedTeam || "no team");
     selectedTeam = data.user.selectedTeam;
+
+if(!data.user.selectedTeam){
+  document.getElementById("teamSelectBox").style.display = "block";
+  await loadTeams();
+  return;
+}
 
 /* USER RATING */
 
