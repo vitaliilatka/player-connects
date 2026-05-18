@@ -191,6 +191,11 @@ const MatchSchema = new Schema(
       away: { type: Number, default: 0 }
     },
 
+    statsProcessed: {
+      type: Boolean,
+      default: false
+    },
+
     /* =========================
        LINEUPS
     ========================= */
