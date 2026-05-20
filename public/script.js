@@ -14,7 +14,7 @@ async function loadPlayersPublic(leagueId) {
       ? `${API_URL}/players?leagueId=${leagueId}`
       : `${API_URL}/players`;
 
-    const res = await fetch(`${API_URL}, { cache: "no-store" }`);
+    const res = await fetch(url, { cache: "no-store" });
     const players = await res.json();
     renderPlayers(
       players
@@ -101,7 +101,10 @@ function openDetails(p) {
   if (p.image && typeof p.image === "string") {
     const v = p.image.trim();
     if (v.startsWith("data:") || v.startsWith("http://") || v.startsWith("https://") || v.startsWith("/")) {
-      playerImg = v;
+      playerImg =
+        v.startsWith("/")
+          ? `${window.API_URL}${v}`
+          : v;
     }
   }
 
