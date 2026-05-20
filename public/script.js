@@ -2,6 +2,11 @@
 
 const DEFAULT_IMG = "https://placehold.co/150x200?text=No%20Image";
 
+const API_URL =
+  window.location.hostname.includes("netlify")
+    ? "https://player-connects.onrender.com"
+    : "";
+
 // === Renamed function ===
 async function loadPlayersPublic(leagueId) {
   try {
@@ -9,7 +14,7 @@ async function loadPlayersPublic(leagueId) {
       ? `${API_URL}/players?leagueId=${leagueId}`
       : `${API_URL}/players`;
 
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(`${API_URL}, { cache: "no-store" }`);
     const players = await res.json();
     renderPlayers(
       players

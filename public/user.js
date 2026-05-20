@@ -1,3 +1,8 @@
+const API_URL =
+  window.location.hostname.includes("netlify")
+    ? "https://player-connects.onrender.com"
+    : "";
+
 const token = localStorage.getItem("token");
 
 if (!token) window.location.href = "/index.html";
@@ -40,7 +45,7 @@ return [...lineup,...subs].filter(Boolean);
 
 
 async function loadTeams(){
-  const res = await fetch("/leagues");
+  const res = await fetch("${API_URL}/leagues");
   const data = await res.json();
 
   const select = document.getElementById("teamSelect");
@@ -60,7 +65,7 @@ async function saveTeam(){
 
 const team = document.getElementById("teamSelect").value;
 
-const res = await fetch("/user/select-team", {
+const res = await fetch("${API_URL}/user/select-team", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -90,7 +95,7 @@ DASHBOARD
 
 async function loadDashboard(){
 
-const res = await fetch("/user/dashboard",{
+const res = await fetch("${API_URL}/user/dashboard",{
 headers:{Authorization:"Bearer "+token}
 });
 
@@ -147,7 +152,7 @@ LOAD SQUAD
 
 async function loadSquad(team){
 
-const res = await fetch("/players/team/"+team,{
+const res = await fetch("${API_URL}/players/team/"+team,{
 headers:{Authorization:"Bearer "+token}
 });
 
@@ -655,7 +660,7 @@ const payload = collectPrediction();
 
 console.log("PREDICTION PAYLOAD", payload)
 
-const res = await fetch(`/matches/${currentMatch._id}/predict-lineup`,{
+const res = await fetch(`${API_URL}/matches/${currentMatch._id}/predict-lineup`,{
 
 method:"POST",
 
@@ -697,7 +702,7 @@ LEADERBOARD
 
 async function loadLeaderboard(){
 
-const res = await fetch("/leaderboard");
+const res = await fetch("${API_URL}/leaderboard");
 const data = await res.json();
 
 let html="<h5>Leaderboard</h5>";
@@ -728,7 +733,7 @@ HISTORY
 
 async function loadHistory(){
 
-const res = await fetch("/user/history",{
+const res = await fetch("${API_URL}/user/history",{
 headers:{Authorization:"Bearer "+token}
 });
 

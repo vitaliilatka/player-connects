@@ -1,4 +1,7 @@
-const API_URL = "";
+const API_URL =
+  window.location.hostname.includes("netlify")
+    ? "https://player-connects.onrender.com"
+    : "";
 
 let currentLineup = { home: [], away: [] };
 let squadFull = { home: [], away: [] };
@@ -32,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
      LOAD TEAMS
   ========================= */
   async function loadTeams() {
-    const res = await fetch("/admin/leagues", {
+    const res = await fetch("${API_URL}/admin/leagues", {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -59,7 +62,7 @@ const playersLeagueSelect = document.getElementById("leagueSelect");
 
 async function loadPlayerLeagues() {
 
-  const res = await fetch("/admin/leagues", {
+  const res = await fetch("${API_URL}/admin/leagues", {
     headers: {
       Authorization: `Bearer ${token}`
     }
@@ -83,7 +86,7 @@ async function loadPlayerLeagues() {
   if (!playersLeagueSelect.value) return;
 
   const res = await fetch(
-    `/admin/players/${playersLeagueSelect.value}`,
+    `${API_URL}/admin/players/${playersLeagueSelect.value}`,
     {
       headers: {
         Authorization: `Bearer ${token}`
@@ -110,7 +113,7 @@ async function loadPlayerLeagues() {
         formData.append("image", form.image.files[0]);
       }
 
-      const res = await fetch("/admin/players", {
+      const res = await fetch("${API_URL}/admin/players", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`
@@ -183,7 +186,7 @@ loadPlayerLeagues();
       time: form.time.value
     };
 
-    const res = await fetch("/admin/matches", {
+    const res = await fetch("${API_URL}/admin/matches", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -210,7 +213,7 @@ loadPlayerLeagues();
   }
 
   lineupMatchday.onchange = async () => {
-    const matches = await fetch(`/matches?matchday=${lineupMatchday.value}`)
+    const matches = await fetch(`${API_URL}/matches?matchday=${lineupMatchday.value}`)
       .then(r => r.json());
 
     lineupMatch.innerHTML = `<option></option>`;
@@ -230,8 +233,8 @@ loadPlayerLeagues();
     currentMatchId = selected.value;
 
     const [home, away] = await Promise.all([
-      fetch(`/players/team/${selected.dataset.home}`).then(r => r.json()),
-      fetch(`/players/team/${selected.dataset.away}`).then(r => r.json())
+      fetch(`${API_URL}/players/team/${selected.dataset.home}`).then(r => r.json()),
+      fetch(`${API_URL}/players/team/${selected.dataset.away}`).then(r => r.json())
     ]);
 
     renderLineupSlots("homePlayers", home.players);
@@ -293,7 +296,7 @@ loadPlayerLeagues();
       })
       .filter(Boolean);
 
-    const res = await fetch(`/admin/matches/${currentMatchId}/lineup`, {
+    const res = await fetch(`${API_URL}/admin/matches/${currentMatchId}/lineup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -315,7 +318,7 @@ loadPlayerLeagues();
 
   resultsMatchday.onchange = async () => {
 
-    const matches = await fetch(`/matches?matchday=${resultsMatchday.value}`)
+    const matches = await fetch(`${API_URL}/matches?matchday=${resultsMatchday.value}`)
       .then(r => r.json());
 
     resultsMatch.innerHTML = `<option></option>`;
@@ -335,7 +338,7 @@ loadPlayerLeagues();
 
     currentMatchId = selected.value;
 
-    const match = await fetch(`/matches/${currentMatchId}`).then(r => r.json());
+    const match = await fetch(`${API_URL}/matches/${currentMatchId}`).then(r => r.json());
 
     currentLineup.home = match.lineups.home;
     currentLineup.away = match.lineups.away;
@@ -347,8 +350,8 @@ loadPlayerLeagues();
     awayScore.value = match.score?.away || 0;
 
     const [home, away] = await Promise.all([
-      fetch(`/players/team/${match.homeTeam}`).then(r => r.json()),
-      fetch(`/players/team/${match.awayTeam}`).then(r => r.json())
+      fetch(`${API_URL}/players/team/${match.homeTeam}`).then(r => r.json()),
+      fetch(`${API_URL}/players/team/${match.awayTeam}`).then(r => r.json())
     ]);
 
     squadFull.home = home.players;
@@ -698,7 +701,7 @@ function collectCards(team) {
     console.log("GOALS HOME:", collectGoals("home"));
     console.log("GOALS AWAY:", collectGoals("away"));
 
-    const res = await fetch(`/admin/matches/${currentMatchId}/full`, {
+    const res = await fetch(`${API_URL}/admin/matches/${currentMatchId}/full`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

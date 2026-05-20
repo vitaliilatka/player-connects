@@ -29,9 +29,18 @@ const app = express();
 // === CORS ===
 
 app.use(cors({
-  origin: true,
+  origin: [
+    "http://localhost:4000",
+    "https://player-connects.onrender.com",
+    "https://playerconnects.netlify.app"
+  ],
   credentials: true
 }));
+
+// app.use(cors({
+//   origin: true,
+//   credentials: true
+// }));
 
 app.use((req, res, next) => {
   console.log("Incoming origin:", req.headers.origin);
@@ -47,7 +56,7 @@ const __dirname = path.dirname(__filename);
 
 // === Middleware ===
 app.use(express.json()); // <-- важно, до всех роутов
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("${API_URL}/uploads", express.static(path.join(__dirname, "uploads")));
 
 // === Route registration ===
 app.use("/players", playersRouter);
@@ -73,6 +82,8 @@ mongoose
   .connect(process.env.MONGO_URI, {dbName: "playersdb"})
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
+
+  
 
 // === Static files (must be LAST) ===
 app.use(express.static(path.join(__dirname, "public")));
