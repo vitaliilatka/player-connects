@@ -1,8 +1,6 @@
-// document.addEventListener("DOMContentLoaded", () => loadPlayersPublic());
-
 const DEFAULT_IMG = "https://placehold.co/150x200?text=No%20Image";
 
-const API_URL =
+window.API_URL =
   window.location.hostname.includes("netlify")
     ? "https://player-connects.onrender.com"
     : "";
