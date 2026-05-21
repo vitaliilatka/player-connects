@@ -353,7 +353,7 @@ pool.forEach(p=>{
 const div = document.createElement("div");
 
 div.className="player-item";
-div.innerText=p.name;
+div.innerText=`${p.name} (${p.position || "?"})`;
 
 div.onclick=()=>{
 
