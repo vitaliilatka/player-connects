@@ -103,17 +103,17 @@ async function loadDashboard() {
 
 try {
 
-const res = await fetch(
-`${API_URL}/user/dashboard`,
-{
-headers:{
-Authorization:`Bearer ${token}`
-}
-}
-);
+        const res = await fetch(
+        `${API_URL}/user/dashboard`,
+        {
+        headers:{
+        Authorization:`Bearer ${token}`
+        }
+        }
+        );
 
-if(!res.ok){
-throw new Error("Dashboard request failed");
+        if(!res.ok){
+        throw new Error("Dashboard request failed");
 }
 
 const data = await res.json();
@@ -241,22 +241,61 @@ if(!existingPrediction) return;
 
 /* lineup */
 
-existingPrediction.players?.forEach((p,i)=>{
-lineup[i]=p.player || p;
+lineup =
+new Array(11).fill(null);
+
+existingPrediction.players?.forEach((saved,i)=>{
+
+const id =
+saved.player?._id ||
+saved.player;
+
+const player =
+squad.find(
+p=>p._id===id
+);
+
+if(player){
+
+lineup[i]=player;
+
+}
+
 });
 
 /* subs */
 
-existingPrediction.subs?.forEach((s,i)=>{
-subs[i]=s.player || s;
+subs =
+new Array(5).fill(null);
+
+existingPrediction.subs?.forEach((saved,i)=>{
+
+const id =
+saved.player?._id ||
+saved.player;
+
+const player =
+squad.find(
+p=>p._id===id
+);
+
+if(player){
+
+subs[i]=player;
+
+}
+
 });
 
 /* score */
 
 if(existingPrediction.predictedScore){
 
-homeScore.value = existingPrediction.predictedScore.home;
-awayScore.value = existingPrediction.predictedScore.away;
+homeScore.value =
+existingPrediction.predictedScore.home;
+
+awayScore.value =
+existingPrediction.predictedScore.away;
 
 }
 
@@ -264,21 +303,36 @@ awayScore.value = existingPrediction.predictedScore.away;
 
 if(existingPrediction.motm){
 
-const player = existingPrediction.motm.player || existingPrediction.motm;
+const motmId =
+existingPrediction.motm._id ||
+existingPrediction.motm;
 
-motm = {
-_id: player._id,
-name: player.name
-};
+const player =
+squad.find(
+p=>p._id===motmId
+);
 
-motmName.innerText = player.name;
+if(player){
+
+motm=player;
+
+motmName.innerText=
+player.name;
+
+}
 
 }
 
 buildPitch();
+
 buildSubs();
 
+console.log(
+"Prediction restored"
+);
+
 }
+
 
 /* =========================
 PLAYER MODAL
