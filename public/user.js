@@ -1,9 +1,10 @@
+const token = localStorage.getItem("token");
+
 const API_URL =
   window.location.hostname.includes("netlify")
     ? "https://player-connects.onrender.com"
     : "";
 
-const token = localStorage.getItem("token");
 
 if (!token) window.location.href = "/index.html";
 
@@ -65,7 +66,7 @@ async function saveTeam(){
 
 const team = document.getElementById("teamSelect").value;
 
-const res = await fetch("${API_URL}/user/select-team", {
+const res = await fetch("${window.API_URL}/user/select-team", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -95,9 +96,12 @@ DASHBOARD
 
 async function loadDashboard(){
 
-const res = await fetch("${API_URL}/user/dashboard",{
-headers:{Authorization:"Bearer "+token}
-});
+fetch(`${window.API_URL}/user/dashboard`, {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+})
+
 
 const data = await res.json();
 
@@ -152,7 +156,7 @@ LOAD SQUAD
 
 async function loadSquad(team){
 
-const res = await fetch("${API_URL}/players/team/"+team,{
+const res = await fetch("${window.API_URL}/players/team/"+team,{
 headers:{Authorization:"Bearer "+token}
 });
 
@@ -702,7 +706,7 @@ LEADERBOARD
 
 async function loadLeaderboard(){
 
-const res = await fetch("${API_URL}/leaderboard");
+const res = await fetch("${window.API_URL}/leaderboard");
 const data = await res.json();
 
 let html="<h5>Leaderboard</h5>";
