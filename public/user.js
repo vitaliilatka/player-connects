@@ -46,7 +46,7 @@ return [...lineup,...subs].filter(Boolean);
 
 
 async function loadTeams(){
-  const res = await fetch("${API_URL}/leagues");
+  const res = await fetch("${window.API_URL}/leagues");
   const data = await res.json();
 
   const select = document.getElementById("teamSelect");
@@ -664,7 +664,7 @@ const payload = collectPrediction();
 
 console.log("PREDICTION PAYLOAD", payload)
 
-const res = await fetch(`${API_URL}/matches/${currentMatch._id}/predict-lineup`,{
+const res = await fetch(`${window.API_URL}/matches/${currentMatch._id}/predict-lineup`,{
 
 method:"POST",
 
@@ -737,7 +737,7 @@ HISTORY
 
 async function loadHistory(){
 
-const res = await fetch("${API_URL}/user/history",{
+const res = await fetch("${window.API_URL}/user/history",{
 headers:{Authorization:"Bearer "+token}
 });
 
