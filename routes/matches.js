@@ -1,7 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import Match from "../models/Match.js";
-import TeamSquad from "../models/TeamSquad.js";
+import Player from "../models/Player.js";
 import UserPrediction from "../models/UserPrediction.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -294,11 +294,18 @@ router.post("/:matchId/predict-lineup", authMiddleware(), async (req, res) => {
 
     const teamName = team === "home" ? match.homeTeam : match.awayTeam;
 
-    const squad = await TeamSquad.findOne({ team: teamName });
-    if (!squad)
-      return res.status(404).json({ message: "Team squad not found" });
+    const squad = await Player.find({
+      team: teamName
+    });
 
-    const squadPlayers = squad.players.map(id => id.toString());
+    if (!squad.length) {
+      return res.status(404).json({
+        message: "Players not found"
+      });
+    }
+
+    const squadPlayers = squad.map(p => p._id.toString());
+
 
     for (const p of players) {
       if (!squadPlayers.includes(p.playerId))
