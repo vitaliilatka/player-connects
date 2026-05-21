@@ -44,9 +44,15 @@ function getActivePlayers(){
 return [...lineup,...subs].filter(Boolean);
 }
 
+async function loadTeams() {
 
-async function loadTeams(){
-  const res = await fetch("${window.API_URL}/leagues");
+  const res = await fetch(`${API_URL}/leagues`);
+
+  if (!res.ok) {
+    console.log("Cannot load teams");
+    return;
+  }
+
   const data = await res.json();
 
   const select = document.getElementById("teamSelect");
@@ -55,35 +61,215 @@ async function loadTeams(){
 
   data.forEach(l => {
     const opt = document.createElement("option");
+
     opt.value = l.name;
     opt.innerText = l.name;
+
     select.appendChild(opt);
   });
+
 }
 
-
-async function saveTeam(){
+async function saveTeam() {
 
 const team = document.getElementById("teamSelect").value;
 
-const res = await fetch("${window.API_URL}/user/select-team", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: "Bearer " + token
-  },
-  body: JSON.stringify({ team })
+const res = await fetch(
+`${API_URL}/user/select-team`,
+{
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+Authorization:`Bearer ${token}`
+},
+
+body:JSON.stringify({ team })
+
 });
 
 const data = await res.json();
 
 if(!res.ok){
-  alert(data.message);
-  return;
+alert(data.message);
+return;
 }
 
 location.reload();
+
 }
+
+async function loadDashboard() {
+
+try {
+
+const res = await fetch(
+`${API_URL}/user/dashboard`,
+{
+headers:{
+Authorization:`Bearer ${token}`
+}
+}
+);
+
+if(!res.ok){
+throw new Error("Dashboard request failed");
+}
+
+const data = await res.json();
+
+console.log(data);
+
+document.getElementById("userInfo").innerText =
+data.user.username +
+" | " +
+(data.user.selectedTeam || "no team");
+
+selectedTeam = data.user.selectedTeam;
+
+if(!selectedTeam){
+
+document.getElementById(
+"teamSelectBox"
+).style.display="block";
+
+await loadTeams();
+
+return;
+
+}
+
+document.getElementById(
+"userRating"
+).innerHTML=
+`
+Total Points:
+<b>${data.user.totalPoints || 0}</b><br>
+
+Rating Position:
+<b>${data.user.ratingPosition || "-"}</b>
+`;
+
+currentMatch = data.nextMatch;
+
+existingPrediction =
+data.existingPrediction || null;
+
+if(currentMatch){
+
+const kickoff =
+new Date(currentMatch.kickoff);
+
+deadline =
+new Date(
+kickoff.getTime()-90*60000
+);
+
+nextMatchInfo.innerHTML=
+`
+<b>
+Matchday
+${currentMatch.matchday}
+</b><br>
+
+${currentMatch.homeTeam}
+
+vs
+
+${currentMatch.awayTeam}
+
+<br>
+
+Kickoff:
+${kickoff.toLocaleString()}
+`;
+
+}
+
+await loadSquad(
+data.user.selectedTeam
+);
+
+buildPitch();
+
+buildSubs();
+
+if(existingPrediction){
+
+autofillPrediction();
+
+}
+
+}
+
+catch(err){
+
+console.error(err);
+
+}
+
+}
+
+async function loadSquad(team){
+
+const res =
+await fetch(
+`${API_URL}/players/team/${team}`,
+{
+headers:{
+Authorization:`Bearer ${token}`
+}
+}
+);
+
+const data =
+await res.json();
+
+squad =
+data.players || [];
+
+}
+
+
+// async function loadTeams(){
+//   const res = await fetch("${window.API_URL}/leagues");
+//   const data = await res.json();
+
+//   const select = document.getElementById("teamSelect");
+
+//   select.innerHTML = "";
+
+//   data.forEach(l => {
+//     const opt = document.createElement("option");
+//     opt.value = l.name;
+//     opt.innerText = l.name;
+//     select.appendChild(opt);
+//   });
+// }
+
+
+// async function saveTeam(){
+
+// const team = document.getElementById("teamSelect").value;
+
+// const res = await fetch("${window.API_URL}/user/select-team", {
+//   method: "POST",
+//   headers: {
+//     "Content-Type": "application/json",
+//     Authorization: "Bearer " + token
+//   },
+//   body: JSON.stringify({ team })
+// });
+
+// const data = await res.json();
+
+// if(!res.ok){
+//   alert(data.message);
+//   return;
+// }
+
+// location.reload();
+// }
 
 
 
@@ -94,77 +280,97 @@ DASHBOARD
 
 
 
-async function loadDashboard(){
+// async function loadDashboard(){
 
-fetch(`${window.API_URL}/user/dashboard`, {
-  headers: {
-    Authorization: `Bearer ${token}`
-  }
-})
+// fetch(`${window.API_URL}/user/dashboard`, {
+//   headers: {
+//     Authorization: `Bearer ${token}`
+//   }
+//     })
+    
+//      try {
+//         const token = localStorage.getItem("token");
+
+//         const res = await fetch(
+//         `${window.API_URL || ""}/user/dashboard`,
+//         {
+//             headers: {
+//             Authorization: `Bearer ${token}`
+//             }
+//         }
+//          );
+         
+//           if (!res.ok) {
+//       throw new Error("Dashboard request failed");
+//     }
 
 
-const data = await res.json();
+//          const data = await res.json();
+         
+//          console.log("Dashboard:", data);
 
-document.getElementById("userInfo").innerText =
-        data.user.username + " | " + (data.user.selectedTeam || "no team");
-    selectedTeam = data.user.selectedTeam;
+// document.getElementById("userInfo").innerText =
+//         data.user.username + " | " + (data.user.selectedTeam || "no team");
+//     selectedTeam = data.user.selectedTeam;
 
-if(!data.user.selectedTeam){
-  document.getElementById("teamSelectBox").style.display = "block";
-  await loadTeams();
-  return;
-}
+// if(!data.user.selectedTeam){
+//   document.getElementById("teamSelectBox").style.display = "block";
+//   await loadTeams();
+//   return;
+//          }
+         
+         
 
-/* USER RATING */
+// /* USER RATING */
 
-document.getElementById("userRating").innerHTML = `
-Total Points: <b>${data.user.totalPoints || 0}</b><br>
-Rating Position: <b>${data.user.ratingPosition || "-"}</b>
-`;
+// document.getElementById("userRating").innerHTML = `
+// Total Points: <b>${data.user.totalPoints || 0}</b><br>
+// Rating Position: <b>${data.user.ratingPosition || "-"}</b>
+// `;
 
-currentMatch = data.nextMatch;
-existingPrediction = data.existingPrediction || null;
+// currentMatch = data.nextMatch;
+// existingPrediction = data.existingPrediction || null;
 
-if(currentMatch){
+// if(currentMatch){
 
-const kickoff = new Date(currentMatch.kickoff);
-const deadline = new Date(kickoff.getTime()-90*60000);
+// const kickoff = new Date(currentMatch.kickoff);
+// const deadline = new Date(kickoff.getTime()-90*60000);
 
-nextMatchInfo.innerHTML = `
-<b>Matchday ${currentMatch.matchday}</b><br>
-${currentMatch.homeTeam} vs ${currentMatch.awayTeam}<br>
-Kickoff: ${kickoff.toLocaleString()}<br>
-Deadline: ${deadline.toLocaleString()}
-`;
+// nextMatchInfo.innerHTML = `
+// <b>Matchday ${currentMatch.matchday}</b><br>
+// ${currentMatch.homeTeam} vs ${currentMatch.awayTeam}<br>
+// Kickoff: ${kickoff.toLocaleString()}<br>
+// Deadline: ${deadline.toLocaleString()}
+// `;
 
-}
+// }
 
-await loadSquad(data.user.selectedTeam);
+// await loadSquad(data.user.selectedTeam);
 
-buildPitch();
-buildSubs();
+// buildPitch();
+// buildSubs();
 
-if(existingPrediction){
-autofillPrediction();
-}
+// if(existingPrediction){
+// autofillPrediction();
+// }
 
-}
+// }
 
 /* =========================
 LOAD SQUAD
 ========================= */
 
-async function loadSquad(team){
+// async function loadSquad(team){
 
-const res = await fetch("${window.API_URL}/players/team/"+team,{
-headers:{Authorization:"Bearer "+token}
-});
+// const res = await fetch("${window.API_URL}/players/team/"+team,{
+// headers:{Authorization:"Bearer "+token}
+// });
 
-const data = await res.json();
+// const data = await res.json();
 
-squad = data.players;
+// squad = data.players;
 
-}
+// }
 
 /* =========================
 AUTOFILL
@@ -664,7 +870,7 @@ const payload = collectPrediction();
 
 console.log("PREDICTION PAYLOAD", payload)
 
-const res = await fetch(`${window.API_URL}/matches/${currentMatch._id}/predict-lineup`,{
+const res = await fetch(`${API_URL}/matches/${currentMatch._id}/predict-lineup`,{
 
 method:"POST",
 
@@ -706,7 +912,7 @@ LEADERBOARD
 
 async function loadLeaderboard(){
 
-const res = await fetch("${window.API_URL}/leaderboard");
+const res = await fetch(`${API_URL}/leaderboard`);
 const data = await res.json();
 
 let html="<h5>Leaderboard</h5>";
@@ -737,7 +943,7 @@ HISTORY
 
 async function loadHistory(){
 
-const res = await fetch("${window.API_URL}/user/history",{
+const res = await fetch(`${API_URL}/user/history`,{
 headers:{Authorization:"Bearer "+token}
 });
 
