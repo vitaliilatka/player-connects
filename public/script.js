@@ -31,10 +31,36 @@ async function loadPlayersPublic(leagueId) {
 }
 
 function calcRating(p) {
-  return (p.games || 0) * 2 + (p.goals || 0) * 4 + (p.assists || 0) * 3 +
-         (p.cleansheets || 0) * 5 + (p.blocks || 0) + (p.saves || 0) +
-         (p.bonus || 0) * 3 - (p.penalty_missed) * 2 - (p.goalsconceded || 0) - (p.yellowcards || 0) - (p.redcards || 0) * 2;
+
+return (
+(p.games || 0) * 2 +
+  (p.wins || 0) * 3 +
+  (p.draws || 0) +
+
+(p.goals || 0) * 4 +
+(p.assists || 0) * 3 +
+
+(p.cleansheets || 0) * 5 +
+
+(p.blocks || 0) +
+(p.saves || 0) +
+
+(p.bonus || 0) * 3 -
+
+(p.penalty_missed || 0) * 2 -
+(p.goalsconceded || 0) -
+(p.yellowcards || 0) -
+(p.redcards || 0) * 2
+
+);
+
 }
+
+// function calcRating(p) {
+//   return (p.games || 0) * 2 + (p.goals || 0) * 4 + (p.assists || 0) * 3 +
+//          (p.cleansheets || 0) * 5 + (p.blocks || 0) + (p.saves || 0) +
+//          (p.bonus || 0) * 3 - (p.penalty_missed) * 2 - (p.goalsconceded || 0) - (p.yellowcards || 0) - (p.redcards || 0) * 2;
+// }
 
 function getPosBadge(pos) {
   switch ((pos || "").toUpperCase()) {

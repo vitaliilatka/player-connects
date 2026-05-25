@@ -167,17 +167,53 @@ if (token) {
 const loginForm = document.getElementById("loginForm");
 const registerForm = document.getElementById("registerForm");
 
-document.getElementById("showLogin").onclick = (e) => {
-  e.preventDefault();
-  loginForm.classList.remove("d-none");
-  registerForm.classList.add("d-none");
+const loginBtn =
+document.getElementById("showLogin");
+
+const registerBtn =
+document.getElementById("showRegister");
+
+loginBtn.onclick=(e)=>{
+
+e.preventDefault();
+
+loginForm.classList.remove("d-none");
+registerForm.classList.add("d-none");
+
+loginBtn.className =
+"btn btn-sm btn-primary";
+
+registerBtn.className =
+"btn btn-sm btn-outline-primary";
+
 };
 
-document.getElementById("showRegister").onclick = (e) => {
-  e.preventDefault();
-  loginForm.classList.add("d-none");
-  registerForm.classList.remove("d-none");
+registerBtn.onclick=(e)=>{
+
+e.preventDefault();
+
+loginForm.classList.add("d-none");
+registerForm.classList.remove("d-none");
+
+registerBtn.className =
+"btn btn-sm btn-primary";
+
+loginBtn.className =
+"btn btn-sm btn-outline-primary";
+
 };
+
+// document.getElementById("showLogin").onclick = (e) => {
+//   e.preventDefault();
+//   loginForm.classList.remove("d-none");
+//   registerForm.classList.add("d-none");
+// };
+
+// document.getElementById("showRegister").onclick = (e) => {
+//   e.preventDefault();
+//   loginForm.classList.add("d-none");
+//   registerForm.classList.remove("d-none");
+// };
 
 /* =========================
    REGISTER
