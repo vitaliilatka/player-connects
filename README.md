@@ -7,7 +7,7 @@ Includes public view, authentication, admin panel, image uploads via Cloudinary,
 https://playerconnects.netlify.app/
 
 🔗 **Backend API:**  
-https://player-connects-backend.onrender.com/
+[https://player-connects-backend.onrender.com/](https://player-connects.onrender.com/)
 
 ---
 
